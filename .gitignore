@@ -1,3 +1,4 @@
 # Ignorar dependências/artefatos locais se você usar algum gerador ou build
 node_modules/
 .DS_Store
+config.js
