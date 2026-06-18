@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html class="light" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Iceberg Kids Manager - Dashboard</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    
+    <!-- Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+    
+    <!-- Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- jsPDF and AutoTable for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- pdf-lib para mesclar pdf -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
+    <style>
+        .hidden { display: none !important; }
+        .nav-links li.hidden { display: none !important; }
+        .circular-logo {
+            border-radius: 50%;
+            object-fit: cover;
+            mix-blend-mode: multiply;
+            background-color: transparent;
+            clip-path: circle(50%);
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            min-height: max(884px, 100dvh);
+            background-color: #faf8ff;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Custom bar chart animation */
+        @keyframes growUp {
+            from { height: 0; }
+            to { height: 100%; }
+        }
+        .animate-grow {
+            animation: growUp 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        
+        /* Compatibility for JS-generated classes and active states */
+        .nav-links li {
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.2s;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        .nav-links li.active {
+            background-color: #1d63ed; /* primary-container */
+            color: #eeefff; /* on-primary-container */
+            font-weight: 700;
+        }
+        .nav-links li:not(.active) {
+            color: #424655; /* on-surface-variant */
+        }
+        .nav-links li:not(.active):hover {
+            background-color: #f2f3ff; /* surface-container-low */
+        }
+
+        /* Table styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.875rem;
+        }
+        th {
+            background-color: #f2f3ff; /* surface-container-low */
+            color: #424655; /* on-surface-variant */
+            font-weight: 700;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #c3c6d7; /* outline-variant */
+        }
+        td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(195, 198, 215, 0.5); /* outline-variant */
+            color: #191b23; /* on-surface */
+        }
+        tr:hover td {
+            background-color: #f2f3ff; /* hover effect */
+        }
+
+        /* Buttons generated dynamically */
+        .btn {
+            background-color: #004bc3;
+            color: #ffffff;
+            padding: 0.5rem 1.25rem;
+            border-radius: 9999px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 0.875rem;
+            box-shadow: 0 2px 4px rgba(0, 75, 195, 0.1);
+        }
+        .btn:hover {
+            background-color: #003fa5;
+            transform: translateY(-1px);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn-outline {
+            background-color: transparent;
+            color: #004bc3;
+            border: 2px solid #004bc3;
+            box-shadow: none;
+        }
+        .btn-outline:hover {
+            background-color: rgba(0, 75, 195, 0.05);
+        }
+        .btn-danger {
+            background-color: #ba1a1a;
+            color: #ffffff;
+        }
+        .btn-danger:hover {
+            background-color: #93000a;
+        }
+        .btn-edit {
+            background-color: #e0e3e5;
+            color: #191c1e;
+        }
+        .btn-edit:hover {
+            background-color: #c4c7c9;
+        }
+        .btn-sm {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+        }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-block;
+        }
+        .status-recebida {
+            background-color: #fef3c7; /* bg-amber-100 */
+            color: #92400e; /* text-amber-800 */
+        }
+        .status-aceita {
+            background-color: #d1fae5; /* bg-emerald-100 */
+            color: #065f46; /* text-emerald-800 */
+        }
+        .status-finalizado {
+            background-color: #dbeafe; /* bg-blue-100 */
+            color: #1e40af; /* text-blue-800 */
+        }
+
+        /* Modal Overlay and Form Elements */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(25, 27, 35, 0.4); /* on-surface/40 */
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+        .modal-content {
+            background-color: #ffffff;
+            padding: 2rem;
+            border-radius: 1.5rem;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            border: 1px solid #c3c6d7;
+        }
+        .modal-content h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #004bc3;
+            margin-bottom: 1.5rem;
+        }
+        .input-group {
+            margin-bottom: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.375rem;
+        }
+        .input-group label {
+            font-weight: 700;
+            font-size: 0.875rem;
+            color: #424655; /* on-surface-variant */
+        }
+        .input-group input, .input-group select, .input-group textarea {
+            padding: 0.75rem 1rem;
+            border: 1px solid #c3c6d7; /* outline-variant */
+            border-radius: 0.75rem;
+            font-size: 0.875rem;
+            background-color: #faf8ff; /* surface */
+            color: #191b23; /* on-surface */
+            transition: border-color 0.2s;
+        }
+        .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: #004bc3; /* primary */
+        }
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: #191b23;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 1.75rem;
+        }
+
+        /* Loader */
+        .loader-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(250, 248, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            backdrop-filter: blur(4px);
+            border-radius: 1.5rem;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 75, 195, 0.1);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border-left-color: #004bc3;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Login Container & Card (Mockup Style) */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at 0% 0%, #ffffff 0%, #f5faff 50%, #e7eff6 100%);
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+        
+        .arctic-gradient {
+            background: radial-gradient(circle at 0% 0%, #ffffff 0%, #f5faff 50%, #e7eff6 100%);
+        }
+
+        .snow-particle {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(219, 228, 234, 0.5);
+        }
+
+        .bouncy-hover:hover {
+            transform: scale(1.02);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .bouncy-hover:active {
+            transform: scale(0.96);
+        }
+        
+        .error-text {
+            color: #ba1a1a;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+            font-weight: 600;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 1.5rem;
+            color: #004bc3;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 700;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-container": "#eeefff",
+                        "primary-fixed-dim": "#b3c5ff",
+                        "surface-container-low": "#f2f3ff",
+                        "secondary-fixed-dim": "#c4c7c9",
+                        "error": "#ba1a1a",
+                        "secondary": "#5c5f61",
+                        "surface-container": "#ededf9",
+                        "inverse-surface": "#2e3039",
+                        "secondary-container": "#e0e3e5",
+                        "outline": "#737686",
+                        "on-secondary-fixed-variant": "#444749",
+                        "surface-container-high": "#e7e7f3",
+                        "on-error-container": "#93000a",
+                        "surface-tint": "#0054d8",
+                        "inverse-on-surface": "#eff0fc",
+                        "surface-dim": "#d9d9e5",
+                        "primary": "#004bc3",
+                        "inverse-primary": "#b3c5ff",
+                        "on-primary-fixed": "#00184a",
+                        "on-secondary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed": "#131b2e",
+                        "secondary-fixed": "#e0e3e5",
+                        "on-primary-fixed-variant": "#003fa5",
+                        "surface-container-highest": "#e1e2ed",
+                        "surface": "#faf8ff",
+                        "tertiary-container": "#656d84",
+                        "background": "#faf8ff",
+                        "surface-variant": "#e1e2ed",
+                        "on-tertiary-fixed-variant": "#3f465c",
+                        "tertiary-fixed-dim": "#bec6e0",
+                        "on-tertiary-container": "#eef0ff",
+                        "on-surface": "#191b23",
+                        "on-surface-variant": "#424655",
+                        "tertiary-fixed": "#dae2fd",
+                        "tertiary": "#4d556b",
+                        "on-secondary-fixed": "#191c1e",
+                        "on-primary": "#ffffff",
+                        "primary-fixed": "#dbe1ff",
+                        "error-container": "#ffdad6",
+                        "on-tertiary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-background": "#191b23",
+                        "primary-container": "#1d63ed",
+                        "outline-variant": "#c3c6d7",
+                        "on-secondary-container": "#626567",
+                        "surface-bright": "#faf8ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.75rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "stat-display": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "label-bold": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "700"}],
+                        "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "stat-display": ["36px", {"lineHeight": "44px", "fontWeight": "800"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-bold": ["12px", {"lineHeight": "16px", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-surface text-on-surface">
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="login-container relative">
+        <!-- Subtle Snow Background Effect -->
+        <div class="absolute inset-0 z-0 pointer-events-none" id="snow-container"></div>
+        
+        <main class="w-full max-w-md z-10">
+            <!-- Logo Section -->
+            <div class="flex flex-col items-center mb-8 animate-fade-in-up">
+                <div class="relative w-32 h-32 md:w-40 md:h-40 mb-4 group rounded-full overflow-hidden">
+                    <div class="absolute inset-0 bg-primary/5 rounded-full scale-110 group-hover:scale-125 transition-transform duration-700 blur-xl"></div>
+                    <img alt="Logo Iceberg Kids" class="w-full h-full object-cover circular-logo scale-110 relative z-10 drop-shadow-lg" src="logo.png">
+                </div>
+                <h1 class="font-headline-lg text-headline-lg text-primary text-center font-bold text-2xl">Área Restrita</h1>
+                <p class="font-body-md text-body-md text-on-surface-variant text-center mt-2 px-4">Painel da Diretoria</p>
+            </div>
+            
+            <!-- Login Card -->
+            <div class="glass-card p-8 rounded-lg shadow-[0_20px_40px_rgba(37,83,117,0.08)]">
+                <form class="space-y-6" id="login-form">
+                    <!-- Username/Email Field -->
+                    <div>
+                        <label class="block font-label-sm text-label-sm text-primary mb-2 px-2" for="login-email">EMAIL OU USUÁRIO</label>
+                        <div class="relative flex items-center group">
+                            <span class="material-symbols-outlined absolute left-4 text-primary opacity-60 group-focus-within:opacity-100 transition-opacity">person</span>
+                            <input class="w-full bg-surface-container-lowest border-2 border-surface-container-highest focus:border-primary focus:ring-0 rounded-full py-4 pl-12 pr-6 font-body-md text-body-md text-on-surface placeholder:text-outline-variant transition-all outline-none" id="login-email" name="username" placeholder="seu@email.com" type="email" required>
+                        </div>
+                    </div>
+                    
+                    <!-- Password Field -->
+                    <div>
+                        <label class="block font-label-sm text-label-sm text-primary mb-2 px-2" for="login-password">SENHA</label>
+                        <div class="relative flex items-center group">
+                            <span class="material-symbols-outlined absolute left-4 text-primary opacity-60 group-focus-within:opacity-100 transition-opacity">lock</span>
+                            <input class="w-full bg-surface-container-lowest border-2 border-surface-container-highest focus:border-primary focus:ring-0 rounded-full py-4 pl-12 pr-6 font-body-md text-body-md text-on-surface placeholder:text-outline-variant transition-all outline-none" id="login-password" name="password" placeholder="••••••••" type="password" required>
+                            <button class="absolute right-4 text-on-surface-variant hover:text-primary transition-colors focus:outline-none" onclick="togglePasswordVisibility()" type="button">
+                                <span class="material-symbols-outlined" id="password-toggle-icon">visibility</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Back Link -->
+                    <div class="flex justify-between items-center px-2">
+                        <a class="font-label-sm text-label-sm text-primary hover:text-secondary transition-colors underline-offset-4 hover:underline" href="index.html">← Voltar ao site</a>
+                    </div>
+                    
+                    <!-- Primary Action -->
+                    <button class="w-full bg-secondary text-on-secondary font-headline-md text-headline-md py-4 rounded-full shadow-lg shadow-secondary/20 bouncy-hover flex items-center justify-center gap-2" type="submit" id="login-submit-btn">
+                        <span>Entrar</span>
+                        <span class="material-symbols-outlined">trending_flat</span>
+                    </button>
+                    
+                    <p id="login-error" class="error-text hidden text-center mt-4">E-mail ou senha incorretos.</p>
+                </form>
+            </div>
+            
+            <!-- Footer Visual Hint -->
+            <div class="mt-8 text-center opacity-40">
+                <div class="flex justify-center gap-4 mb-4">
+                    <span class="material-symbols-outlined text-primary text-3xl">cottage</span>
+                </div>
+                <p class="font-label-sm text-label-sm text-primary">© 2026 Iceberg Kids - EXPEDIÇÃO POLAR</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- MAIN DASHBOARD -->
+    <div id="dashboard" class="flex min-h-screen bg-surface hidden">
+        
+        <!-- SIDE DRAWER / SIDEBAR -->
+        <aside class="fixed inset-y-0 left-0 z-50 w-[280px] bg-surface-container-lowest border-r border-outline-variant shadow-2xl flex flex-col transform -translate-x-full lg:translate-x-0 lg:static lg:z-0 lg:shadow-none transition-transform duration-300" id="side-drawer">
+            <!-- Header -->
+            <div class="p-6 border-b border-outline-variant flex items-center gap-3 cursor-pointer" onclick="toggleDrawer()">
+                <div class="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center border border-outline-variant">
+                    <img src="logo.png" alt="Logo" class="w-full h-full object-cover circular-logo">
+                </div>
+                <h1 class="font-headline-md text-primary tracking-tight text-xl font-bold">Iceberg Kids</h1>
+            </div>
+            
+            <!-- Navigation Links -->
+            <nav class="nav-links flex-1 px-4 py-6 space-y-1">
+                <li class="active" data-tab="tab-dashboard">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span>Dashboard</span>
+                </li>
+                <li data-tab="tab-inscricoes">
+                    <span class="material-symbols-outlined">person_add</span>
+                    <span>Inscrições</span>
+                </li>
+                <li data-tab="tab-apontamentos">
+                    <span class="material-symbols-outlined">edit_note</span>
+                    <span>Apontamentos</span>
+                </li>
+                <li data-tab="tab-atividades">
+                    <span class="material-symbols-outlined">local_activity</span>
+                    <span>Atividades</span>
+                </li>
+                <li data-tab="tab-calendario">
+                    <span class="material-symbols-outlined">calendar_month</span>
+                    <span>Calendário</span>
+                </li>
+                <li data-tab="tab-apoiadores">
+                    <span class="material-symbols-outlined">stars</span>
+                    <span>Hall de apoiadores</span>
+                </li>
+                <li data-tab="tab-financeiro">
+                    <span class="material-symbols-outlined">payments</span>
+                    <span>Financeiro</span>
+                </li>
+                <li data-tab="tab-usuarios">
+                    <span class="material-symbols-outlined">manage_accounts</span>
+                    <span>Usuários</span>
+                </li>
+            </nav>
+            
+            <!-- Footer -->
+            <div class="p-4 border-t border-outline-variant flex flex-col gap-2">
+                <span id="user-name-display" class="text-sm font-semibold text-on-surface-variant text-center py-2 bg-surface-container rounded-xl">Usuário</span>
+                <button id="logout-btn" class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-error hover:bg-error-container/20 transition-colors font-label-bold font-bold">
+                    <span class="material-symbols-outlined">logout</span>
+                    <span>Sair</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Backdrop for drawer -->
+        <div class="fixed inset-0 bg-on-surface/40 backdrop-blur-[2px] opacity-0 transition-opacity duration-300 pointer-events-none z-45 lg:hidden" id="drawer-backdrop"></div>
+
+        <!-- MAIN CONTENT CONTAINER -->
+        <div class="flex-1 flex flex-col min-w-0">
+            <!-- TopAppBar -->
+            <header class="w-full sticky top-0 z-40 bg-surface border-b border-outline-variant shadow-sm">
+                <div class="flex justify-between items-center px-4 py-3 w-full max-w-7xl mx-auto">
+                    <div class="flex items-center gap-3">
+                        <button class="w-10 h-10 flex items-center justify-center text-on-surface-variant active:bg-surface-container-high rounded-full transition-colors lg:hidden" id="menu-toggle">
+                            <span class="material-symbols-outlined text-2xl">menu</span>
+                        </button>
+                        <div class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center border border-outline-variant shadow-sm bg-white">
+                            <img src="logo.png" alt="Logo" class="w-full h-full object-cover circular-logo">
+                        </div>
+                        <h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary tracking-tight font-bold text-lg">Por amor a Jesus, farei sempre o meu melhor!</h1>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="loadAllData()" class="flex items-center gap-2 bg-surface-container-high px-4 py-2 rounded-full font-label-bold text-label-bold text-primary active:scale-95 transition-transform duration-200">
+                            <span class="material-symbols-outlined text-[18px]">refresh</span>
+                            <span class="hidden sm:inline">Atualizar</span>
+                        </button>
+                        <div id="user-avatar-container" class="w-9 h-9 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden border border-outline-variant">
+                            <!-- Fills dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- MAIN CONTENT TAB SECTIONS -->
+            <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-8 relative">
+                
+                <!-- Loader Overlay -->
+                <div id="loader" class="loader-overlay hidden">
+                    <div class="relative w-20 h-20 mb-4 flex items-center justify-center">
+                        <!-- Anel giratório externo -->
+                        <div class="absolute inset-0 rounded-full border-4 border-primary/20 border-t-secondary animate-spin"></div>
+                        <!-- Logo centralizado -->
+                        <img src="logo.png" alt="Logo" class="circular-logo w-12 h-12 relative z-10 shadow-md">
+                    </div>
+                    <p class="text-primary font-bold animate-pulse text-sm">Carregando dados do Google...</p>
+                </div>
+
+                <!-- TAB: DASHBOARD -->
+                <section id="tab-dashboard" class="tab-content active space-y-6">
+                    <!-- Welcome Hero -->
+                    <div class="relative overflow-hidden rounded-3xl bg-primary-container p-6 text-on-primary-container">
+                        <div class="relative z-10 space-y-2 text-left">
+                            <h2 class="font-headline-md text-headline-md font-bold text-xl">Visão Geral do Clube</h2>
+                            <p class="font-body-md text-body-md opacity-90"><span id="user-greeting">Bem-vinda, Daiane!</span> Aqui está o resumo das suas atividades hoje.</p>
+                        </div>
+                        <div class="absolute -right-12 -top-12 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
+                        <div class="absolute -bottom-8 right-12 w-32 h-32 bg-primary/20 rounded-full blur-2xl"></div>
+                    </div>
+
+                    <!-- Metrics Section -->
+                    <section class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-headline-md text-headline-md text-on-surface text-left font-bold text-lg">Métricas de Impacto</h3>
+                        </div>
+                        <div class="flex overflow-x-auto gap-4 pb-4 no-scrollbar -mx-4 px-4 snap-x">
+                            <!-- Stat Card 1 -->
+                            <div class="min-w-[160px] flex-1 snap-start bg-white p-5 rounded-2xl border border-outline-variant shadow-sm active:scale-[0.98] transition-transform text-left">
+                                <div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-primary mb-3">
+                                    <span class="material-symbols-outlined">groups</span>
+                                </div>
+                                <p class="font-body-md text-sm text-on-surface-variant mb-1">Total de Inscritos</p>
+                                <p class="font-stat-display text-3xl font-extrabold text-primary" id="stat-total">0</p>
+                            </div>
+                            <!-- Stat Card 2 -->
+                            <div class="min-w-[160px] flex-1 snap-start bg-white p-5 rounded-2xl border border-outline-variant shadow-sm active:scale-[0.98] transition-transform text-left">
+                                <div class="w-10 h-10 rounded-lg bg-yellow-50 flex items-center justify-center text-yellow-600 mb-3">
+                                    <span class="material-symbols-outlined">inbox</span>
+                                </div>
+                                <p class="font-body-md text-sm text-on-surface-variant mb-1">Inscrições Recebidas</p>
+                                <p class="font-stat-display text-3xl font-extrabold text-yellow-600" id="stat-recebidas">0</p>
+                            </div>
+                            <!-- Stat Card 3 -->
+                            <div class="min-w-[160px] flex-1 snap-start bg-white p-5 rounded-2xl border border-outline-variant shadow-sm active:scale-[0.98] transition-transform text-left">
+                                <div class="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center text-green-600 mb-3">
+                                    <span class="material-symbols-outlined">check_circle</span>
+                                </div>
+                                <p class="font-body-md text-sm text-on-surface-variant mb-1">Inscrições Aceitas</p>
+                                <p class="font-stat-display text-3xl font-extrabold text-green-600" id="stat-aceitas">0</p>
+                            </div>
+                            <!-- Stat Card 4 -->
+                            <div class="min-w-[160px] flex-1 snap-start bg-white p-5 rounded-2xl border border-outline-variant shadow-sm active:scale-[0.98] transition-transform text-left">
+                                <div class="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 mb-3">
+                                    <span class="material-symbols-outlined">volunteer_activism</span>
+                                </div>
+                                <p class="font-body-md text-sm text-on-surface-variant mb-1">Apoiadores do Mês</p>
+                                <p class="font-stat-display text-3xl font-extrabold text-purple-600" id="stat-apoiadores">0</p>
+                                <p class="text-xs text-purple-500 font-semibold mt-1" id="stat-apoiadores-valor">R$ 0,00 doados</p>
+                            </div>
+                            <!-- Stat Card 5 -->
+                            <div class="min-w-[160px] flex-1 snap-start bg-white p-5 rounded-2xl border border-outline-variant shadow-sm active:scale-[0.98] transition-transform text-left">
+                                <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 mb-3">
+                                    <span class="material-symbols-outlined">task_alt</span>
+                                </div>
+                                <p class="font-body-md text-sm text-on-surface-variant mb-1">Inscrições Finalizadas</p>
+                                <p class="font-stat-display text-3xl font-extrabold text-blue-600" id="stat-finalizadas">0</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Charts Bento Layout -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Inscrições por Status -->
+                        <section class="bg-white p-6 rounded-2xl border border-outline-variant shadow-sm flex flex-col justify-between">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-headline-md text-headline-md text-on-surface font-bold text-lg">Status de Inscrição</h3>
+                                <span class="material-symbols-outlined text-on-surface-variant cursor-help">info</span>
+                            </div>
+                            <div class="flex items-center justify-center py-4 relative">
+                                <canvas id="chartStatus" style="max-height: 200px; max-width: 200px;"></canvas>
+                            </div>
+                            <div class="mt-4 grid grid-cols-3 gap-2">
+                                <div class="flex flex-col items-center">
+                                    <div class="w-2 h-2 rounded-full bg-yellow-500 mb-1"></div>
+                                    <span class="font-label-bold text-[10px] uppercase opacity-75">Recebidas</span>
+                                    <span class="font-headline-md text-lg font-bold text-yellow-600" id="pct-recebidas">0%</span>
+                                </div>
+                                <div class="flex flex-col items-center">
+                                    <div class="w-2 h-2 rounded-full bg-green-500 mb-1"></div>
+                                    <span class="font-label-bold text-[10px] uppercase opacity-75">Aceitas</span>
+                                    <span class="font-headline-md text-lg font-bold text-green-600" id="pct-aceitas">0%</span>
+                                </div>
+                                <div class="flex flex-col items-center">
+                                    <div class="w-2 h-2 rounded-full bg-primary mb-1"></div>
+                                    <span class="font-label-bold text-[10px] uppercase opacity-75">Finalizadas</span>
+                                    <span class="font-headline-md text-lg font-bold text-primary" id="pct-finalizadas">0%</span>
+                                </div>
+                            </div>
+                        </section>
+                        
+                        <!-- Cargos no Clube -->
+                        <section class="bg-white p-6 rounded-2xl border border-outline-variant shadow-sm flex flex-col justify-between">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-headline-md text-headline-md text-on-surface font-bold text-lg">Cargos no Clube</h3>
+                                <div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-[16px]">bar_chart</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-center p-4 w-full h-64">
+                                <canvas id="chartCargos" style="max-height: 220px; width: 100%;"></canvas>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- Seção Financeira do Dashboard -->
+                    <div class="border-t border-outline-variant/50 pt-6 space-y-4">
+                        <h3 class="font-headline-md text-headline-md text-on-surface text-left font-bold text-lg">Visão Financeira</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <!-- Gráfico: Mensalidades por Mês -->
+                            <section class="bg-white p-6 rounded-2xl border border-outline-variant shadow-sm flex flex-col justify-between h-[350px]">
+                                <h4 class="font-bold text-primary text-sm mb-4">Mensalidades Recebidas por Mês</h4>
+                                <div class="flex-1 relative flex items-center justify-center">
+                                    <canvas id="chartMensalidadesMes" style="width: 100%; height: 100%;"></canvas>
+                                </div>
+                            </section>
+                            
+                            <!-- Gráfico: Inscrições Pagas -->
+                            <section class="bg-white p-6 rounded-2xl border border-outline-variant shadow-sm flex flex-col justify-between h-[350px]">
+                                <h4 class="font-bold text-primary text-sm mb-4">Inscrições Pagas</h4>
+                                <div class="flex-1 relative flex items-center justify-center">
+                                    <canvas id="chartInscricoesPagas" style="width: 100%; height: 100%;"></canvas>
+                                </div>
+                            </section>
+                            
+                            <!-- Gráfico: Fluxo de Caixa -->
+                            <section class="bg-white p-6 rounded-2xl border border-outline-variant shadow-sm flex flex-col justify-between h-[350px]">
+                                <h4 class="font-bold text-primary text-sm mb-4">Fluxo de Caixa (Mensal)</h4>
+                                <div class="flex-1 relative flex items-center justify-center">
+                                    <canvas id="chartFluxoCaixa" style="width: 100%; height: 100%;"></canvas>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+
+                    <!-- Activity Guide Card -->
+                    <section id="banner-guia-atividade" class="rounded-2xl overflow-hidden relative h-48 shadow-lg group cursor-pointer">
+                        <img alt="Volunteer interaction" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA38HI-LoqSTVx45NEIzWC69xliwTfrfy_A251-fVZNz1PScHf9TbZrRawyKyEA-pxPNohNV1acxpwTQdCzdJ2InIgNP5TcoGq3OXsumPMLoyayCkhQ2Zo_xcYeJvEorR1O8fBdkLKgC0qjiTWula_itFeWMkq1b1daph9NuKqZFm3hTjBGxUQ0Iu1f_oWtE6T4Xy6xbnyOSujjHWeK5AE6NP4UhMbaAuJPW6P6_h9dP1gxEBtiQ3zmanvsH_aYg_adqqxnZmwlz84E"/>
+                        <div class="absolute inset-0 bg-gradient-to-t from-on-surface/80 to-transparent flex flex-col justify-end p-6 text-left">
+                            <h4 class="text-white font-headline-md text-xl font-bold mb-1">Guia de Atividades 2026</h4>
+                            <p class="text-white/80 font-body-md text-sm">Descubra as novas dinâmicas para o próximo calendário.</p>
+                        </div>
+                    </section>
+                </section>
+
+                <!-- TAB: INSCRIÇÕES -->
+                <section id="tab-inscricoes" class="tab-content hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-left">
+                        <h2 class="font-headline-lg text-xl font-bold text-primary">Gestão de Inscrições</h2>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="flex items-center gap-2 bg-surface-container-high text-primary px-4 py-2 rounded-full font-label-bold active:scale-95 transition-transform duration-200" onclick="openSelecaoImpressaoModal()">
+                                <span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+                                <span>Imprimir em Lote (PDF)</span>
+                            </button>
+                            <button class="flex items-center gap-2 bg-surface-container-high text-primary px-4 py-2 rounded-full font-label-bold active:scale-95 transition-transform duration-200" onclick="openTshirtSummaryModal()">
+                                <span class="material-symbols-outlined text-[18px]">checkroom</span>
+                                <span>Resumo de Camisetas</span>
+                            </button>
+                            <a href="inscricao.html" target="_blank" class="flex items-center gap-2 bg-primary text-on-primary px-5 py-2 rounded-full font-label-bold active:scale-95 transition-transform duration-200 shadow-md">
+                                <span class="material-symbols-outlined text-[18px]">person_add</span>
+                                <span>Nova Inscrição</span>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <div class="relative flex-1">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-outline-variant pointer-events-none">
+                                <span class="material-symbols-outlined text-[18px]">search</span>
+                            </span>
+                            <input type="text" id="search-inscricao" placeholder="Pesquisar por nome da criança ou responsável..." class="w-full pl-10 pr-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl focus:outline-none focus:border-primary text-sm transition-colors">
+                        </div>
+                        <select id="filter-status" class="bg-surface-container-lowest border border-outline-variant rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-primary transition-colors min-w-[180px]">
+                            <option value="">Todos os Status</option>
+                            <option value="Recebida">Recebida</option>
+                            <option value="Aceita">Aceita</option>
+                            <option value="Cadastro finalizado">Cadastro finalizado</option>
+                            <option value="Cancelada">Cancelada</option>
+                        </select>
+                    </div>
+
+                    <div class="overflow-x-auto bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm no-scrollbar">
+                        <table class="w-full border-collapse text-left text-sm" id="table-inscricoes">
+                            <thead>
+                                <tr class="bg-surface-container border-b border-outline-variant">
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Nome da Criança</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Idade</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Responsável</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Status</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Cargo</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-outline-variant/50">
+                                <!-- JS fills this -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- TAB: APONTAMENTOS -->
+                <section id="tab-apontamentos" class="tab-content hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-left">
+                        <h2 class="font-headline-lg text-xl font-bold text-primary">Apontamentos e Chamadas</h2>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="flex items-center gap-2 bg-surface-container-high text-primary px-4 py-2 rounded-full font-label-bold active:scale-95 transition-transform duration-200" onclick="openApontamentosChartPopup()">
+                                <span class="material-symbols-outlined text-[18px]">bar_chart</span>
+                                <span>Ver Gráfico</span>
+                            </button>
+                            <button class="flex items-center gap-2 bg-surface-container-high text-primary px-4 py-2 rounded-full font-label-bold active:scale-95 transition-transform duration-200" onclick="openModal('modal-relatorio-pontos')">
+                                <span class="material-symbols-outlined text-[18px]">military_tech</span>
+                                <span>Relatório de Pontos</span>
+                            </button>
+                            <button class="flex items-center gap-2 bg-primary text-on-primary px-5 py-2 rounded-full font-label-bold active:scale-95 transition-transform duration-200 shadow-md" onclick="openModal('modal-apontamento')">
+                                <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                                <span>Novo Apontamento</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm no-scrollbar">
+                        <table class="w-full border-collapse text-left text-sm" id="table-apontamentos">
+                            <thead>
+                                <tr class="bg-surface-container border-b border-outline-variant">
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Data</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Nome</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Pontual</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Material</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Uniforme</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Lenço</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Participativo</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Total</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-outline-variant/50">
+                                <!-- JS fills this -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- TAB: ATIVIDADES -->
+                <section id="tab-atividades" class="tab-content hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-left">
+                        <h2 class="font-headline-lg text-xl font-bold text-primary">Diário de Reuniões e Atividades</h2>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="flex items-center gap-2 bg-surface-container-high text-primary px-4 py-2 rounded-full font-label-bold active:scale-95 transition-transform duration-200" onclick="openModal('modal-pdf-atividades')">
+                                <span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+                                <span>Gerar Relatório (PDF)</span>
+                            </button>
+                            <button class="flex items-center gap-2 bg-primary text-on-primary px-5 py-2 rounded-full font-label-bold active:scale-95 transition-transform duration-200 shadow-md" onclick="openModal('modal-atividade')">
+                                <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                                <span>Nova Atividade</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm no-scrollbar">
+                        <table class="w-full border-collapse text-left text-sm" id="table-atividades">
+                            <thead>
+                                <tr class="bg-surface-container border-b border-outline-variant">
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Data da Reunião</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Atividade Realizada</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Observações</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-outline-variant/50">
+                                <!-- JS fills this -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- TAB: CALENDÁRIO -->
+                <section id="tab-calendario" class="tab-content hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-left">
+                        <h2 class="font-headline-lg text-xl font-bold text-primary">Calendário e Planejamento Anual</h2>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="flex items-center gap-2 bg-surface-container-high text-primary px-4 py-2 rounded-full font-label-bold active:scale-95 transition-transform duration-200" onclick="openModal('modal-pdf-calendario')">
+                                <span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+                                <span>Relatório Calendário</span>
+                            </button>
+                            <button class="flex items-center gap-2 bg-surface-container-high text-primary px-4 py-2 rounded-full font-label-bold active:scale-95 transition-transform duration-200" id="btn-seed-calendario" style="display: none;" onclick="seedCalendario()">
+                                <span class="material-symbols-outlined text-[18px]">calendar_today</span>
+                                <span>Importar Padrão 2026</span>
+                            </button>
+                            <button class="flex items-center gap-2 bg-primary text-on-primary px-5 py-2 rounded-full font-label-bold active:scale-95 transition-transform duration-200 shadow-md" id="btn-novo-evento" onclick="openModal('modal-calendario')">
+                                <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                                <span>Novo Evento</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm no-scrollbar">
+                        <table class="w-full border-collapse text-left text-sm" id="table-calendario">
+                            <thead>
+                                <tr class="bg-surface-container border-b border-outline-variant">
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Data</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Evento</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Categoria</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Detalhes</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-outline-variant/50">
+                                <!-- JS fills this -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- TAB: APOIADORES -->
+                <section id="tab-apoiadores" class="tab-content hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-left">
+                        <h2 class="font-headline-lg text-xl font-bold text-primary">Hall de Apoiadores</h2>
+                        <button class="flex items-center gap-2 bg-primary text-on-primary px-5 py-2 rounded-full font-label-bold active:scale-95 transition-transform duration-200 shadow-md" onclick="openModal('modal-apoiador')">
+                            <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                            <span>Novo Apoiador</span>
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm no-scrollbar">
+                        <table class="w-full border-collapse text-left text-sm" id="table-apoiadores">
+                            <thead>
+                                <tr class="bg-surface-container border-b border-outline-variant">
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Data</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Nome do Apoiador</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Detalhe / Empresa</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-outline-variant/50">
+                                <!-- JS fills this -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- TAB: FINANCEIRO -->
+                <section id="tab-financeiro" class="tab-content hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-left">
+                        <h2 class="font-headline-lg text-xl font-bold text-primary">Controle Financeiro (Livro-Caixa)</h2>
+                        <div class="flex flex-wrap gap-2">
+                            <button id="btn-financeiro-nova-entrada" class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-full font-label-bold active:scale-95 transition-transform duration-200 shadow-md" onclick="openNewEntradaModal()">
+                                <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                                <span>Lançar Entrada</span>
+                            </button>
+                            <button id="btn-financeiro-nova-saida" class="flex items-center gap-2 bg-error hover:bg-red-700 text-white px-5 py-2 rounded-full font-label-bold active:scale-95 transition-transform duration-200 shadow-md" onclick="openNewSaidaModal()">
+                                <span class="material-symbols-outlined text-[18px]">remove_circle</span>
+                                <span>Lançar Saída</span>
+                            </button>
+                            <button id="btn-financeiro-adimplencia" class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-full font-label-bold active:scale-95 transition-transform duration-200 shadow-md" onclick="openAdimplenciaModal()">
+                                <span class="material-symbols-outlined text-[18px]">verified</span>
+                                <span>Verificar Adimplência</span>
+                            </button>
+                            <button class="flex items-center gap-2 bg-surface-container-high text-primary px-4 py-2 rounded-full font-label-bold active:scale-95 transition-transform duration-200" onclick="openModal('modal-financeiro-relatorio')">
+                                <span class="material-symbols-outlined text-[18px]">summarize</span>
+                                <span>Extrato / Relatório</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Finance Stats Overview -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-white p-5 rounded-2xl border border-outline-variant shadow-sm text-left">
+                            <div class="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center text-green-600 mb-3">
+                                <span class="material-symbols-outlined">trending_up</span>
+                            </div>
+                            <p class="font-body-md text-sm text-on-surface-variant mb-1">Total de Entradas</p>
+                            <p class="font-stat-display text-2xl font-extrabold text-green-600" id="fin-total-entradas">R$ 0,00</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-outline-variant shadow-sm text-left">
+                            <div class="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-red-600 mb-3">
+                                <span class="material-symbols-outlined">trending_down</span>
+                            </div>
+                            <p class="font-body-md text-sm text-on-surface-variant mb-1">Total de Saídas</p>
+                            <p class="font-stat-display text-2xl font-extrabold text-red-600" id="fin-total-saidas">R$ 0,00</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-outline-variant shadow-sm text-left" id="fin-saldo-card">
+                            <div class="w-10 h-10 rounded-lg bg-primary-container/20 flex items-center justify-center text-primary mb-3">
+                                <span class="material-symbols-outlined">account_balance_wallet</span>
+                            </div>
+                            <p class="font-body-md text-sm text-on-surface-variant mb-1">Saldo Atual</p>
+                            <p class="font-stat-display text-2xl font-extrabold text-primary" id="fin-saldo-atual">R$ 0,00</p>
+                        </div>
+                    </div>
+
+                    <!-- Extrato / Relatório Exibido na Tela (Opcional - aparece se gerado) -->
+                    <div id="financeiro-relatorio-view" class="hidden bg-white p-6 rounded-2xl border-2 border-primary/20 space-y-4 text-left">
+                        <div class="flex justify-between items-center border-b pb-3">
+                             <h3 class="font-bold text-primary text-lg" id="financeiro-relatorio-title">Resumo do Extrato Gerado</h3>
+                             <div class="flex items-center gap-2">
+                                 <button type="button" onclick="printFinanceiroRelatorioPDF()" class="text-primary hover:text-blue-700 flex items-center p-1.5 rounded-lg hover:bg-blue-50" title="Salvar como PDF">
+                                     <span class="material-symbols-outlined">print</span>
+                                 </button>
+                                 <button type="button" onclick="closeFinanceiroRelatorioView()" class="text-on-surface-variant hover:text-error flex items-center p-1.5 rounded-lg hover:bg-red-50">
+                                     <span class="material-symbols-outlined">close</span>
+                                 </button>
+                             </div>
+                         </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm font-semibold" id="fin-relatorio-summary-grid">
+                            <!-- JS fills -->
+                        </div>
+                        <div class="w-full h-64 relative mt-4">
+                            <canvas id="chartFinanceiroRelatorio"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Transactions Table -->
+                    <div class="overflow-x-auto bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm no-scrollbar">
+                        <table class="w-full border-collapse text-left text-sm" id="table-financeiro">
+                            <thead>
+                                <tr class="bg-surface-container border-b border-outline-variant">
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Data</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Tipo</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Categoria</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Descrição</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Valor</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Detalhes Adicionais</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-outline-variant/50">
+                                <!-- JS fills this -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- TAB: USUÁRIOS -->
+                <section id="tab-usuarios" class="tab-content hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-left">
+                        <h2 class="font-headline-lg text-xl font-bold text-primary">Controle de Usuários da Diretoria</h2>
+                        <button class="flex items-center gap-2 bg-primary text-on-primary px-5 py-2 rounded-full font-label-bold active:scale-95 transition-transform duration-200 shadow-md" onclick="openNewUsuarioModal()">
+                            <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                            <span>Novo Usuário</span>
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm no-scrollbar">
+                        <table class="w-full border-collapse text-left text-sm" id="table-usuarios">
+                            <thead>
+                                <tr class="bg-surface-container border-b border-outline-variant">
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Foto</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Nome</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">E-mail</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Nível de Acesso</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-outline-variant/50">
+                                <!-- JS fills this -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAIS -->
+
+    <!-- Modal Editar Status/Cargo -->
+    <div id="modal-edit-status" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Editar Inscrição</h3>
+            <form id="form-edit-status">
+                <input type="hidden" id="edit-row-id">
+                <p id="edit-child-name" style="margin-bottom: 15px; font-weight: bold;"></p>
+                <div class="input-group">
+                    <label>Status da Inscrição:</label>
+                    <select id="edit-status" required>
+                        <option value="Recebida">Recebida</option>
+                        <option value="Aceita">Aceita</option>
+                        <option value="Cadastro finalizado">Cadastro finalizado</option>
+                        <option value="Cancelada">Cancelada</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Cargo / Função:</label>
+                    <select id="edit-cargo" required>
+                        <option value="Aventureiro(a)">Aventureiro(a)</option>
+                        <option value="Pais">Pais</option>
+                        <option value="Membro da Diretoria">Membro da Diretoria</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-edit-status')">Cancelar</button>
+                    <button type="submit" class="btn">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Apoiador -->
+    <div id="modal-apoiador" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Cadastrar Apoiador</h3>
+            <form id="form-apoiador">
+                <div class="input-group">
+                    <label>Nome do Apoiador:</label>
+                    <input type="text" id="apoiador-nome" required>
+                </div>
+                <div class="input-group">
+                    <label>Detalhe ou Empresa (opcional):</label>
+                    <input type="text" id="apoiador-detalhe">
+                </div>
+                <div class="input-group">
+                    <label>Telefone / WhatsApp (Opcional):</label>
+                    <input type="text" id="apoiador-telefone">
+                </div>
+                <div class="input-group">
+                    <label>E-mail (Opcional):</label>
+                    <input type="email" id="apoiador-email">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-apoiador')">Cancelar</button>
+                    <button type="submit" class="btn">Cadastrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Relatório de Atividades -->
+    <div id="modal-pdf-atividades" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Relatório de Atividades</h3>
+            <p style="margin-bottom: 15px; color: #666;">Selecione o período para gerar o documento oficial (PDF).</p>
+            <form id="form-pdf-atividades">
+                <div class="input-group">
+                    <label>Período:</label>
+                    <select id="pdf-periodo" required>
+                        <option value="mensal">Mensal (Mês Atual)</option>
+                        <option value="semestral">Semestral (Últimos 6 meses)</option>
+                        <option value="anual">Anual (Este Ano)</option>
+                        <option value="tudo">Todo o Histórico</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-pdf-atividades')">Cancelar</button>
+                    <button type="submit" class="btn">Gerar PDF</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Relatório Calendário -->
+    <div id="modal-pdf-calendario" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Relatório de Calendário</h3>
+            <p style="margin-bottom: 15px; color: #666;">Selecione o período para gerar a agenda em PDF.</p>
+            <form id="form-pdf-calendario">
+                <div class="input-group">
+                    <label>Período:</label>
+                    <select id="pdf-calendario-periodo" required>
+                        <option value="mensal">Mensal (Mês Atual)</option>
+                        <option value="semestral">Semestral (Próximos 6 meses)</option>
+                        <option value="anual">Anual (Este Ano)</option>
+                        <option value="tudo">Todo o Calendário</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-pdf-calendario')">Cancelar</button>
+                    <button type="submit" class="btn">Gerar PDF</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Atividade -->
+    <div id="modal-atividade" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Cadastrar Atividade</h3>
+            <form id="form-atividade">
+                <div class="input-group">
+                    <label>Data da Reunião:</label>
+                    <input type="date" id="atividade-data" required>
+                </div>
+                <div class="input-group">
+                    <label>Atividade Realizada:</label>
+                    <input type="text" id="atividade-nome" required>
+                </div>
+                <div class="input-group">
+                    <label>Observações:</label>
+                    <textarea id="atividade-obs" rows="3"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-atividade')">Cancelar</button>
+                    <button type="submit" class="btn">Salvar Atividade</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Apontamento -->
+    <div id="modal-apontamento" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Lançar Apontamento</h3>
+            <form id="form-apontamento">
+                <div class="input-group">
+                    <label>Data:</label>
+                    <input type="date" id="apontamento-data" required>
+                </div>
+                <div class="input-group">
+                    <label>Selecione a Criança:</label>
+                    <select id="apontamento-nome" required></select>
+                </div>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="apontamento-pontual"> Pontual</label>
+                    <label><input type="checkbox" id="apontamento-material"> Trouxe Material</label>
+                    <label><input type="checkbox" id="apontamento-uniforme"> Veio de Uniforme</label>
+                    <label><input type="checkbox" id="apontamento-lenco"> Está de Lenço</label>
+                    <label><input type="checkbox" id="apontamento-participativo"> Participativo</label>
+                </div>
+                <div class="input-group">
+                    <label>Observação (Opcional):</label>
+                    <input type="text" id="apontamento-obs">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-apontamento')">Cancelar</button>
+                    <button type="submit" class="btn">Lançar Chamada</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Editar Apoiador -->
+    <div id="modal-editar-apoiador" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Editar Apoiador</h3>
+            <form id="form-editar-apoiador">
+                <input type="hidden" id="edit-apoiador-row">
+                <div class="input-group">
+                    <label>Nome do Apoiador:</label>
+                    <input type="text" id="edit-apoiador-nome" required>
+                </div>
+                <div class="input-group">
+                    <label>Detalhe ou Empresa:</label>
+                    <input type="text" id="edit-apoiador-detalhe">
+                </div>
+                <div class="input-group">
+                    <label>Telefone:</label>
+                    <input type="text" id="edit-apoiador-telefone">
+                </div>
+                <div class="input-group">
+                    <label>E-mail:</label>
+                    <input type="email" id="edit-apoiador-email">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-editar-apoiador')">Cancelar</button>
+                    <button type="submit" class="btn">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Editar Atividade -->
+    <div id="modal-editar-atividade" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Editar Atividade</h3>
+            <form id="form-editar-atividade">
+                <input type="hidden" id="edit-atividade-row">
+                <div class="input-group">
+                    <label>Data da Reunião:</label>
+                    <input type="date" id="edit-atividade-data" required>
+                </div>
+                <div class="input-group">
+                    <label>Atividade Realizada:</label>
+                    <input type="text" id="edit-atividade-nome" required>
+                </div>
+                <div class="input-group">
+                    <label>Observações:</label>
+                    <textarea id="edit-atividade-obs" rows="3"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-editar-atividade')">Cancelar</button>
+                    <button type="submit" class="btn">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Editar Apontamento -->
+    <div id="modal-editar-apontamento" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Editar Apontamento</h3>
+            <form id="form-editar-apontamento">
+                <input type="hidden" id="edit-apontamento-row">
+                <div class="input-group">
+                    <label>Data:</label>
+                    <input type="date" id="edit-apontamento-data" required>
+                </div>
+                <div class="input-group">
+                    <label>Nome Aventureiro:</label>
+                    <input type="text" id="edit-apontamento-nome" required disabled>
+                </div>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="edit-apontamento-pontual"> Pontual</label>
+                    <label><input type="checkbox" id="edit-apontamento-material"> Trouxe Material</label>
+                    <label><input type="checkbox" id="edit-apontamento-uniforme"> Veio de Uniforme</label>
+                    <label><input type="checkbox" id="edit-apontamento-lenco"> Está de Lenço</label>
+                    <label><input type="checkbox" id="edit-apontamento-participativo"> Participativo</label>
+                </div>
+                <div class="input-group">
+                    <label>Observação (Opcional):</label>
+                    <input type="text" id="edit-apontamento-obs">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-editar-apontamento')">Cancelar</button>
+                    <button type="submit" class="btn">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Relatório Pontuação -->
+    <div id="modal-relatorio-pontos" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Relatório de Pontuação</h3>
+            <p style="margin-bottom: 15px; color: #666;">Selecione o período para gerar o ranking.</p>
+            <form id="form-relatorio-pontos">
+                <div class="input-group">
+                    <label>Período:</label>
+                    <select id="pontos-periodo" required>
+                        <option value="mensal">Mensal (Mês Atual)</option>
+                        <option value="semestral">Semestral (Últimos 6 meses)</option>
+                        <option value="anual">Anual (Este Ano)</option>
+                        <option value="tudo">Todo o Histórico</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-relatorio-pontos')">Cancelar</button>
+                    <button type="submit" class="btn">Gerar Relatório (PDF)</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Novo Evento Calendário -->
+    <div id="modal-calendario" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Cadastrar Evento no Calendário</h3>
+            <form id="form-calendario">
+                <div class="input-group">
+                    <label>Data do Evento:</label>
+                    <input type="date" id="calendario-data" required>
+                </div>
+                <div class="input-group">
+                    <label>Nome do Evento / Atividade:</label>
+                    <input type="text" id="calendario-nome" required>
+                </div>
+                <div class="input-group">
+                    <label>Categoria:</label>
+                    <select id="calendario-categoria" required>
+                        <option value="Reunião Regular">Reunião Regular</option>
+                        <option value="Passeios e Atividades">Passeios e Atividades</option>
+                        <option value="Prova do Clube">Prova do Clube</option>
+                        <option value="Eventos Especiais">Eventos Especiais</option>
+                        <option value="Folga">Folga</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Detalhes Adicionais (Opcional):</label>
+                    <input type="text" id="calendario-detalhes">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-calendario')">Cancelar</button>
+                    <button type="submit" class="btn">Salvar Evento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Editar Evento Calendário -->
+    <div id="modal-editar-calendario" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Editar Evento do Calendário</h3>
+            <form id="form-editar-calendario">
+                <input type="hidden" id="edit-calendario-row">
+                <div class="input-group">
+                    <label>Data do Evento:</label>
+                    <input type="date" id="edit-calendario-data" required>
+                </div>
+                <div class="input-group">
+                    <label>Nome do Evento / Atividade:</label>
+                    <input type="text" id="edit-calendario-nome" required>
+                </div>
+                <div class="input-group">
+                    <label>Categoria:</label>
+                    <select id="edit-calendario-categoria" required>
+                        <option value="Reunião Regular">Reunião Regular</option>
+                        <option value="Passeios e Atividades">Passeios e Atividades</option>
+                        <option value="Prova do Clube">Prova do Clube</option>
+                        <option value="Eventos Especiais">Eventos Especiais</option>
+                        <option value="Folga">Folga</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Detalhes Adicionais (Opcional):</label>
+                    <input type="text" id="edit-calendario-detalhes">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-editar-calendario')">Cancelar</button>
+                    <button type="submit" class="btn">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Novo Usuário -->
+    <div id="modal-usuario" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 id="usuario-modal-title">Cadastrar Usuário</h3>
+            <form id="form-usuario">
+                <input type="hidden" id="usuario-row-id">
+                <div class="input-group">
+                    <label>Nome Completo:</label>
+                    <input type="text" id="usuario-nome" required placeholder="Ex: Daiane Machado">
+                </div>
+                <div class="input-group">
+                    <label>E-mail (Login):</label>
+                    <input type="email" id="usuario-email" required placeholder="Ex: daiane@email.com">
+                </div>
+                <div class="input-group">
+                    <label>Senha:</label>
+                    <input type="password" id="usuario-senha" required placeholder="Digite a senha">
+                </div>
+                <div class="input-group">
+                    <label>Nível de Acesso:</label>
+                    <select id="usuario-nivel" required>
+                        <option value="Admin">Administrador</option>
+                        <option value="Diretor">Diretor</option>
+                        <option value="Secretário">Secretário</option>
+                        <option value="Conselheiro">Conselheiro</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Foto de Perfil (Opcional):</label>
+                    <input type="file" id="usuario-foto" accept="image/*" class="text-sm">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-usuario')">Cancelar</button>
+                    <button type="submit" class="btn" id="btn-salvar-usuario">Cadastrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Lançar Entrada -->
+    <div id="modal-financeiro-entrada" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Lançar Entrada Financeira</h3>
+            <form id="form-financeiro-entrada">
+                <input type="hidden" id="entrada-row-id">
+                <div class="input-group">
+                    <label>Data:</label>
+                    <input type="date" id="entrada-data" required>
+                </div>
+                <div class="input-group">
+                    <label>Categoria:</label>
+                    <select id="entrada-categoria" required onchange="toggleEntradaFields()">
+                        <option value="Inscrição">Inscrição</option>
+                        <option value="Mensalidade">Mensalidade</option>
+                        <option value="Doação">Doação</option>
+                        <option value="Ofertas">Ofertas</option>
+                        <option value="Outros">Outros Projetos de Arrecadação</option>
+                    </select>
+                </div>
+                <div class="input-group hidden" id="div-entrada-detalhe-outros">
+                    <label>Indique qual Projeto/Arrecadação:</label>
+                    <input type="text" id="entrada-detalhe-outros" placeholder="Ex: Venda de Doces">
+                </div>
+                <div class="input-group" id="div-entrada-desbravador">
+                    <label>Aventureiro Relacionado:</label>
+                    <select id="entrada-crianca">
+                        <!-- JS fills with childName list -->
+                    </select>
+                </div>
+                <div class="input-group hidden" id="div-entrada-doador">
+                    <label>Nome do Doador:</label>
+                    <input type="text" id="entrada-doador" placeholder="Ex: Mercado Compre Bem">
+                    <select id="entrada-doador-select" class="hidden">
+                        <!-- JS fills with childName list -->
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Valor (R$):</label>
+                    <input type="number" step="0.01" id="entrada-valor" required placeholder="0.00">
+                </div>
+                <div class="input-group">
+                    <label>Descrição / Observações:</label>
+                    <input type="text" id="entrada-descricao" placeholder="Ex: Mensalidade de Junho de João">
+                </div>
+                <div class="input-group">
+                    <label>Responsável pelo Lançamento:</label>
+                    <input type="text" id="entrada-responsavel" required placeholder="Nome do diretor/tesoureiro">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-financeiro-entrada')">Cancelar</button>
+                    <button type="submit" class="btn">Confirmar Lançamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Lançar Saída -->
+    <div id="modal-financeiro-saida" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Lançar Saída / Despesa</h3>
+            <form id="form-financeiro-saida">
+                <input type="hidden" id="saida-row-id">
+                <div class="input-group">
+                    <label>Data:</label>
+                    <input type="date" id="saida-data" required>
+                </div>
+                <div class="input-group">
+                    <label>Categoria:</label>
+                    <select id="saida-categoria" required>
+                        <option value="Materiais">Materiais do Clube</option>
+                        <option value="Atividades">Gastos com Atividades/Passeios</option>
+                        <option value="Despesas">Despesas Administrativas</option>
+                        <option value="Outros">Outras Despesas</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Valor (R$):</label>
+                    <input type="number" step="0.01" id="saida-valor" required placeholder="0.00">
+                </div>
+                <div class="input-group">
+                    <label>Nota Fiscal (NF) - Opcional:</label>
+                    <input type="text" id="saida-nf" placeholder="Ex: NF-12345">
+                </div>
+                <div class="input-group">
+                    <label>Descrição / Observações:</label>
+                    <input type="text" id="saida-descricao" required placeholder="Ex: Compra de tintas para artesanato">
+                </div>
+                <div class="input-group">
+                    <label>Responsável pela Saída:</label>
+                    <input type="text" id="saida-responsavel" required placeholder="Quem realizou o pagamento">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-financeiro-saida')">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Confirmar Saída</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Extrato e Relatório Financeiro -->
+    <div id="modal-financeiro-relatorio" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Gerar Extrato / Relatório Financeiro</h3>
+            <form id="form-financeiro-relatorio">
+                <div class="input-group">
+                    <label>Data Inicial:</label>
+                    <input type="date" id="fin-relatorio-de" required>
+                </div>
+                <div class="input-group">
+                    <label>Data Final:</label>
+                    <input type="date" id="fin-relatorio-ate" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-financeiro-relatorio')">Cancelar</button>
+                    <button type="submit" class="btn">Gerar Extrato</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Relatório de Adimplência -->
+    <div id="modal-financeiro-adimplencia" class="modal-overlay hidden">
+        <div class="modal-content max-w-4xl w-full" style="max-height: 90vh; overflow-y: auto;">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="font-bold text-primary text-xl" style="margin: 0;">Relatório de Adimplência</h3>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="printAdimplenciaPDF()" class="text-primary hover:text-blue-700 flex items-center p-1.5 rounded-lg hover:bg-blue-50" title="Gerar Relatório PDF">
+                        <span class="material-symbols-outlined">print</span>
+                    </button>
+                    <button type="button" onclick="closeModal('modal-financeiro-adimplencia')" class="text-on-surface-variant hover:text-error flex items-center p-1.5 rounded-lg hover:bg-red-50">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Tabs inside Adimplência modal -->
+            <div class="flex border-b border-outline-variant mb-4 flex-wrap gap-0">
+                <button type="button" id="tab-btn-adimplencia-inscricao" class="px-4 py-2 border-b-2 border-primary text-primary font-bold text-sm" onclick="switchAdimplenciaTab('inscricao')">Taxa de Inscrição</button>
+                <button type="button" id="tab-btn-adimplencia-mensalidade" class="px-4 py-2 border-b-2 border-transparent text-on-surface-variant hover:text-primary font-bold text-sm" onclick="switchAdimplenciaTab('mensalidade')">Mensalidade do Mês</button>
+                <button type="button" id="tab-btn-adimplencia-ano" class="px-4 py-2 border-b-2 border-transparent text-on-surface-variant hover:text-primary font-bold text-sm" onclick="switchAdimplenciaTab('ano')">Mensalidades do Ano</button>
+            </div>
+            
+            <!-- Content of Inscrição -->
+            <div id="adimplencia-content-inscricao" class="space-y-4 text-left">
+                <p class="text-xs text-on-surface-variant">Mostra se os aventureiros com cadastros ativos já realizaram o pagamento único da taxa de inscrição do clube.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-green-50/50 p-4 rounded-xl border border-green-200">
+                        <h4 class="font-bold text-green-700 mb-2 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                            <span>Em Dia (Adimplentes)</span>
+                        </h4>
+                        <ul id="list-adimplentes-inscricao" class="space-y-1.5 max-h-80 overflow-y-auto text-sm text-on-surface">
+                            <!-- JS fills -->
+                        </ul>
+                    </div>
+                    <div class="bg-red-50/50 p-4 rounded-xl border border-red-200">
+                        <h4 class="font-bold text-red-700 mb-2 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[18px]">pending</span>
+                            <span>Pendentes (Inadimplentes)</span>
+                        </h4>
+                        <ul id="list-inadimplentes-inscricao" class="space-y-1.5 max-h-80 overflow-y-auto text-sm text-on-surface">
+                            <!-- JS fills -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Content of Mensalidade -->
+            <div id="adimplencia-content-mensalidade" class="hidden space-y-4 text-left">
+                <p class="text-xs text-on-surface-variant" id="adimplencia-mensalidade-subtitle">Mensalidades pendentes do mês atual.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-green-50/50 p-4 rounded-xl border border-green-200">
+                        <h4 class="font-bold text-green-700 mb-2 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                            <span>Em Dia (Adimplentes)</span>
+                        </h4>
+                        <ul id="list-adimplentes-mensalidade" class="space-y-1.5 max-h-80 overflow-y-auto text-sm text-on-surface">
+                            <!-- JS fills -->
+                        </ul>
+                    </div>
+                    <div class="bg-red-50/50 p-4 rounded-xl border border-red-200">
+                        <h4 class="font-bold text-red-700 mb-2 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[18px]">pending</span>
+                            <span>Pendentes (Inadimplentes)</span>
+                        </h4>
+                        <ul id="list-inadimplentes-mensalidade" class="space-y-1.5 max-h-80 overflow-y-auto text-sm text-on-surface">
+                            <!-- JS fills -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content of Ano Corrente -->
+            <div id="adimplencia-content-ano" class="hidden space-y-4 text-left">
+                <p class="text-xs text-on-surface-variant" id="adimplencia-ano-subtitle">Meses em aberto no ano corrente. Cada aventureiro ativo que não possui lançamento de mensalidade em determinado mês aparece como devedor.</p>
+                <!-- Tabela por aventureiro x mês -->
+                <div class="overflow-x-auto rounded-xl border border-outline-variant">
+                    <table class="w-full text-xs border-collapse" id="table-adimplencia-ano">
+                        <thead>
+                            <tr class="bg-surface-container">
+                                <th class="px-3 py-2 font-bold text-on-surface-variant text-left sticky left-0 bg-surface-container">Aventureiro</th>
+                                <!-- JS fills month columns -->
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-adimplencia-ano">
+                            <!-- JS fills -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-3 flex items-center gap-4 text-xs">
+                    <span class="flex items-center gap-1"><span class="w-4 h-4 bg-green-200 rounded inline-block"></span> Pago</span>
+                    <span class="flex items-center gap-1"><span class="w-4 h-4 bg-red-200 rounded inline-block"></span> Pendente</span>
+                    <span class="flex items-center gap-1"><span class="w-4 h-4 bg-gray-100 rounded inline-block"></span> Não inscrito ainda</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Seleção de Inscrições para Impressão em Lote -->
+    <div id="modal-selecao-impressao" class="modal-overlay hidden">
+        <div class="modal-content max-w-2xl w-full" style="max-height: 90vh; overflow-y: auto;">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="font-bold text-primary text-xl" style="margin: 0;">Selecionar Inscrições para Imprimir</h3>
+                <button type="button" onclick="closeModal('modal-selecao-impressao')" class="text-on-surface-variant hover:text-error">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <p class="text-sm text-on-surface-variant mb-4">Marque as inscrições que deseja incluir em um único arquivo PDF.</p>
+            <div class="flex items-center gap-3 mb-3 p-3 bg-surface-container rounded-xl">
+                <input type="checkbox" id="selecao-todos" class="w-4 h-4 accent-primary cursor-pointer" onchange="toggleSelecionarTodos(this.checked)">
+                <label for="selecao-todos" class="font-bold text-sm cursor-pointer">Selecionar / Desmarcar Todos</label>
+            </div>
+            <!-- Filtro por status -->
+            <div class="mb-3">
+                <select id="selecao-filtro-status" class="w-full border border-outline-variant rounded-xl p-2 text-sm" onchange="renderSelecaoLista()">
+                    <option value="">Todos os Status</option>
+                    <option value="Recebida">Recebida</option>
+                    <option value="Aceita">Aceita</option>
+                    <option value="Cadastro finalizado">Cadastro finalizado</option>
+                    <option value="Cancelada">Cancelada</option>
+                </select>
+            </div>
+            <div id="lista-selecao-impressao" class="space-y-1 max-h-96 overflow-y-auto pr-1">
+                <!-- JS fills -->
+            </div>
+            <div class="modal-actions mt-4 flex justify-between">
+                <button type="button" class="btn btn-outline" onclick="closeModal('modal-selecao-impressao')">Cancelar</button>
+                <button type="button" class="btn flex items-center gap-2" onclick="imprimirSelecionados()">
+                    <span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+                    <span>Gerar PDF Selecionados</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-tshirt-summary" class="modal-overlay hidden">
+        <div class="modal-content max-w-lg w-full" style="max-height: 90vh; overflow-y: auto;">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="font-bold text-primary text-xl" style="margin: 0;">Resumo de Camisetas</h3>
+                <button type="button" onclick="closeModal('modal-tshirt-summary')" class="text-on-surface-variant hover:text-error">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <p class="text-sm text-on-surface-variant mb-4">Exibe somatório de camisetas principais e extras das inscrições ativas (sem canceladas).</p>
+            <div class="grid grid-cols-1 gap-4">
+                <div class="bg-surface-container p-4 rounded-xl border border-outline-variant">
+                    <h4 class="font-semibold mb-3">Camisetas Principais</h4>
+                    <ul id="tshirt-summary-main" class="list-disc list-inside text-sm text-on-surface"></ul>
+                </div>
+                <div class="bg-surface-container p-4 rounded-xl border border-outline-variant">
+                    <h4 class="font-semibold mb-3">Camisetas Extras</h4>
+                    <ul id="tshirt-summary-extras" class="list-disc list-inside text-sm text-on-surface"></ul>
+                </div>
+            </div>
+            <div class="modal-actions mt-4 flex justify-end">
+                <button type="button" class="btn btn-outline" onclick="closeModal('modal-tshirt-summary')">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Apontamentos Gráfico Popup -->
+    <div id="modal-apontamentos-grafico" class="modal-overlay hidden">
+        <div class="modal-content max-w-3xl w-full">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-primary m-0">Ranking Geral de Pontuação</h3>
+                <button type="button" onclick="closeModal('modal-apontamentos-grafico')" class="text-on-surface-variant hover:text-error">
+                    <span class="material-symbols-outlined text-[28px]">close</span>
+                </button>
+            </div>
+            <p class="text-sm text-outline mb-4">Gráfico ordenado de aventureiros com maior pontuação total acumulada.</p>
+            <div class="relative w-full h-[400px] bg-white p-4 rounded-xl border border-outline-variant flex items-center justify-center">
+                <canvas id="chartApontamentosPopup" style="width: 100%; height: 100%;"></canvas>
+            </div>
+            <div class="modal-actions flex justify-between mt-6">
+                <button type="button" class="btn btn-outline flex items-center gap-2" onclick="copyChartAsImage('chartApontamentosPopup')">
+                    <span class="material-symbols-outlined">content_copy</span>
+                    <span>Copiar como Imagem</span>
+                </button>
+                <button type="button" class="btn" onclick="closeModal('modal-apontamentos-grafico')">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="admin.js"></script>
+    <script>
+        const menuToggle = document.getElementById('menu-toggle');
+        const sideDrawer = document.getElementById('side-drawer');
+        const drawerBackdrop = document.getElementById('drawer-backdrop');
+        
+        let isDrawerOpen = false;
+
+        function toggleDrawer() {
+            isDrawerOpen = !isDrawerOpen;
+            
+            if (isDrawerOpen) {
+                sideDrawer.classList.remove('-translate-x-full');
+                sideDrawer.classList.add('translate-x-0');
+                drawerBackdrop.classList.remove('opacity-0', 'pointer-events-none');
+                drawerBackdrop.classList.add('opacity-100', 'pointer-events-auto');
+                document.body.style.overflow = 'hidden';
+            } else {
+                sideDrawer.classList.remove('translate-x-0');
+                sideDrawer.classList.add('-translate-x-full');
+                drawerBackdrop.classList.remove('opacity-100', 'pointer-events-auto');
+                drawerBackdrop.classList.add('opacity-0', 'pointer-events-none');
+                document.body.style.overflow = '';
+            }
+        }
+
+        if (menuToggle) menuToggle.addEventListener('click', toggleDrawer);
+        if (drawerBackdrop) drawerBackdrop.addEventListener('click', toggleDrawer);
+
+        // Support for swipe gesture (minimal)
+        let touchStartX = 0;
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', (e) => {
+            let touchEndX = e.changedTouches[0].screenX;
+            if (touchStartX < 50 && touchEndX > touchStartX + 100 && !isDrawerOpen) {
+                toggleDrawer(); // Swipe from left edge to open
+            } else if (isDrawerOpen && touchEndX < touchStartX - 100) {
+                toggleDrawer(); // Swipe left to close
+            }
+        });
+
+        // Toggle Password Visibility
+        function togglePasswordVisibility() {
+            const pwd = document.getElementById('login-password');
+            const icon = document.getElementById('password-toggle-icon');
+            if (pwd && icon) {
+                if (pwd.type === 'password') {
+                    pwd.type = 'text';
+                    icon.innerText = 'visibility_off';
+                } else {
+                    pwd.type = 'password';
+                    icon.innerText = 'visibility';
+                }
+            }
+        }
+
+        // Atmosphere: Create subtle snow particles
+        function createSnow() {
+            const container = document.getElementById('snow-container');
+            if (!container) return;
+            const count = 30;
+            
+            for (let i = 0; i < count; i++) {
+                const snow = document.createElement('div');
+                snow.className = 'snow-particle';
+                
+                const size = Math.random() * 4 + 2 + 'px';
+                snow.style.width = size;
+                snow.style.height = size;
+                
+                snow.style.left = Math.random() * 100 + 'vw';
+                snow.style.top = Math.random() * 100 + 'vh';
+                
+                const duration = Math.random() * 10 + 10 + 's';
+                const delay = Math.random() * 5 + 's';
+                
+                snow.animate([
+                    { transform: 'translateY(-10px) rotate(0deg)', opacity: 0 },
+                    { opacity: 0.6, offset: 0.2 },
+                    { transform: `translateY(100vh) translateX(${Math.random() * 40 - 20}px) rotate(360deg)`, opacity: 0 }
+                ], {
+                    duration: parseFloat(duration) * 1000,
+                    iterations: Infinity,
+                    delay: parseFloat(delay) * 1000,
+                    easing: 'linear'
+                });
+                
+                container.appendChild(snow);
+            }
+        }
+
+        // Initialize snow on DOM load
+        window.addEventListener('DOMContentLoaded', createSnow);
+    </script>
+</body>
+</html>
