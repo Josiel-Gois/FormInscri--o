@@ -39,11 +39,11 @@ function doPost(e) {
 function setupHeaders() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var headers = [
-    "Data", "childName", "gender", "birthDate", "document", "baptized", 
+    "Data", "tipoInscricao", "cargo", "classe", "childName", "gender", "birthDate", "document", "baptized", 
     "tshirtSize", "extraTshirtsData", "cep", "street", "number", "complement", 
     "neighborhood", "city", "state", "fatherName", "fatherPhone", "fatherEmail", 
     "motherName", "motherPhone", "motherEmail", "emergencyName", "emergencyPhone", 
-    "healthPlan", "bloodType", "allergies", "conditions", "medications", "lgpd", "terms"
+    "healthPlan", "bloodType", "allergies", "conditions", "medications", "lgpd", "terms", "FotoBase64"
   ];
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
 }

@@ -30,13 +30,63 @@ function nextStep(step) {
 
     if (step === 2) {
         // Validações básicas da etapa 1
-        if(!document.getElementById('nome-crianca').value || !document.getElementById('data-nasc').value || 
-           !document.getElementById('idade').value || !document.getElementById('genero').value || 
-           !document.getElementById('tam-camiseta').value || !document.getElementById('nome-mae').value || 
-           !document.getElementById('nome-pai').value || !document.getElementById('telefone-contato').value || 
-           !document.getElementById('email-responsavel').value || !document.getElementById('cpf-responsavel').value ||
-           !document.getElementById('telefone-emergencia').value || !document.getElementById('nome-emergencia').value) {
-            alert('Por favor, preencha todos os campos obrigatórios da Etapa 1.');
+        const tipoCadastro = document.getElementById('tipo-cadastro') ? document.getElementById('tipo-cadastro').value : 'Aventureiro';
+        let requiredFields = [];
+        
+        if (tipoCadastro !== 'Aventureiro(a)') {
+            requiredFields = [
+                'nome-crianca', 'cpf-cadastro', 'adulto-email', 'adulto-telefone', 'adulto-profissao', 'adulto-escolaridade',
+                'telefone-emergencia', 'nome-emergencia',
+                'cep', 'rua', 'numero-end', 'bairro', 'cidade', 'estado'
+            ];
+        } else {
+            requiredFields = [
+                'nome-crianca', 'data-nasc', 'idade', 'genero', 'tam-camiseta', 'cpf-cadastro',
+                'nome-mae', 'cpf-mae', 'prof-mae', 'telefone-mae', 'email-mae',
+                'nome-pai', 'cpf-pai', 'prof-pai', 'telefone-contato', 'email-responsavel', 
+                'cpf-responsavel', 'telefone-emergencia', 'nome-emergencia',
+                'cep', 'rua', 'numero-end', 'bairro', 'cidade', 'estado'
+            ];
+        }
+
+        // Limpar estilos de erro anteriores
+        requiredFields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.style.borderColor = '';
+                el.style.boxShadow = '';
+            }
+        });
+
+        // Validar e destacar
+        let missingField = null;
+        for (const id of requiredFields) {
+            const el = document.getElementById(id);
+            if (el) {
+                // Verificar se o elemento está visível
+                const isVisible = el.offsetWidth > 0 || el.offsetHeight > 0 || el.offsetParent !== null;
+                if (isVisible && (!el.value || el.value.trim() === '')) {
+                    missingField = el;
+                    break;
+                }
+            }
+        }
+
+        if (missingField) {
+            missingField.focus();
+            missingField.style.borderColor = '#ba1a1a'; // Cor de erro
+            missingField.style.boxShadow = '0 0 0 4px rgba(186, 26, 26, 0.15)';
+            
+            // Tenta pegar o label correspondente
+            let labelText = '';
+            const label = document.querySelector(`label[for="${missingField.id}"]`) || missingField.previousElementSibling;
+            if (label) {
+                labelText = label.textContent.replace('*', '').trim();
+            } else {
+                labelText = missingField.placeholder || missingField.id;
+            }
+            
+            alert(`Por favor, preencha o campo obrigatório: "${labelText}"`);
             return;
         }
     }
@@ -175,69 +225,102 @@ document.getElementById('formInscricao').addEventListener('submit', async functi
     const checkboxes = document.querySelectorAll('input[name="doencas"]:checked');
     const doencas = Array.from(checkboxes).map(cb => cb.value).join(', ');
 
-    // Mapear telefone e email com base no vínculo para preencher corretamente a planilha
-    const vinculo = document.getElementById('vinculo-responsavel').value;
-    const telPrincipal = document.getElementById('telefone-contato').value;
-    const emailPrincipal = document.getElementById('email-responsavel').value;
+    // Ler telefones e e-mails direto dos campos dedicados
+    const fatherPhone = document.getElementById('telefone-pai') ? document.getElementById('telefone-pai').value : '';
+    const fatherEmail = document.getElementById('email-pai') ? document.getElementById('email-pai').value : '';
+    const motherPhone = document.getElementById('telefone-mae') ? document.getElementById('telefone-mae').value : '';
+    const motherEmail = document.getElementById('email-mae') ? document.getElementById('email-mae').value : '';
 
-    let fatherPhone = '';
-    let fatherEmail = '';
-    let motherPhone = '';
-    let motherEmail = '';
-
-    if (vinculo === 'Pai') {
-        fatherPhone = telPrincipal;
-        fatherEmail = emailPrincipal;
-    } else if (vinculo === 'Mãe') {
-        motherPhone = telPrincipal;
-        motherEmail = emailPrincipal;
-    } else {
-        motherPhone = telPrincipal;
-        motherEmail = emailPrincipal;
+    // Ler foto se selecionada
+    const fotoInput = document.getElementById('foto-input');
+    let fotoBase64 = '';
+    if (fotoInput && fotoInput.files && fotoInput.files[0]) {
+        try {
+            fotoBase64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = () => reject('');
+                reader.readAsDataURL(fotoInput.files[0]);
+            });
+        } catch(e) { fotoBase64 = ''; }
     }
+
+    const vinculo = document.getElementById('vinculo-responsavel') ? document.getElementById('vinculo-responsavel').value : '';
+    const tipoCadastro = document.getElementById('tipo-cadastro') ? document.getElementById('tipo-cadastro').value : 'Aventureiro';
+    const classeCalculada = document.getElementById('classe') ? document.getElementById('classe').value : '';
+    const idadeCalculada = document.getElementById('idade') ? document.getElementById('idade').value : '';
+
+    const isAdulto = tipoCadastro !== 'Aventureiro(a)';
+    const cpfVal = isAdulto 
+        ? (document.getElementById('cpf-cadastro') ? document.getElementById('cpf-cadastro').value : '')
+        : (document.getElementById('cpf-responsavel') ? document.getElementById('cpf-responsavel').value : '');
+    const emailVal = isAdulto 
+        ? (document.getElementById('adulto-email') ? document.getElementById('adulto-email').value : '')
+        : (document.getElementById('email-responsavel') ? document.getElementById('email-responsavel').value : '');
 
     const payload = {
         action: 'addInscricao',
         data: {
-            childName: document.getElementById('nome-crianca').value,
-            fatherName: document.getElementById('nome-pai').value,
-            motherName: document.getElementById('nome-mae').value,
-            cpfResponsavel: document.getElementById('cpf-responsavel').value,
-            vinculoResponsavel: vinculo,
-            nomeOutroResponsavel: document.getElementById('nome-outro-responsavel') ? document.getElementById('nome-outro-responsavel').value : '',
-            escolaridadePai: document.getElementById('escolaridade-pai').value,
-            cursoPai: '',
-            escolaridadeMae: document.getElementById('escolaridade-mae').value,
-            cursoMae: '',
-            profSaudePai: document.getElementById('saude-pai').value,
-            qualProfPai: document.getElementById('prof-pai').value,
-            profSaudeMae: document.getElementById('saude-mae').value,
-            qualProfMae: document.getElementById('prof-mae').value,
-            childDob: document.getElementById('data-nasc').value,
-            childAge: document.getElementById('idade').value,
-            childSex: document.getElementById('genero').value,
-            fatherPhone: fatherPhone,
-            fatherEmail: fatherEmail,
-            motherPhone: motherPhone,
-            motherEmail: motherEmail,
-            baptized: document.getElementById('batizado') ? document.getElementById('batizado').value : 'Não',
-            tshirtSize: document.getElementById('tam-camiseta').value,
-            extraTshirtsData: document.getElementById('extraTshirtsData') ? document.getElementById('extraTshirtsData').value : '',
-            emergencyName: document.getElementById('nome-emergencia').value,
-            emergencyPhone: document.getElementById('telefone-emergencia').value,
-            healthPlan: document.getElementById('plano-saude').value === 'Sim' ? document.getElementById('nome-plano').value : 'Não',
-            bloodType: document.getElementById('tipoSanguineo').value,
-            doencas: doencas,
-            allergies: document.getElementById('tem-alergia').value === 'Sim' ? document.getElementById('qual-alergia').value : 'Não',
-            remediosAlergia: document.getElementById('remedios-alergia') ? document.getElementById('remedios-alergia').value : '',
-            ferimento: document.getElementById('ferimento') ? document.getElementById('ferimento').value : '',
-            fratura: document.getElementById('fratura') ? document.getElementById('fratura').value : '',
-            imobilizado: document.getElementById('imobilizado') ? document.getElementById('imobilizado').value : '',
-            cirurgias: document.getElementById('qual-cirurgia') ? document.getElementById('qual-cirurgia').value : '',
-            internacao: document.getElementById('internacao') ? document.getElementById('internacao').value : '',
-            medications: document.getElementById('tem-medicacao').value === 'Sim' ? document.getElementById('qual-medicacao').value : 'Não',
-            deficiencias: document.getElementById('tem-deficiencia').value === 'Sim' ? document.getElementById('qual-deficiencia').value : 'Não',
-            obsMedica: document.getElementById('obs-medica') ? document.getElementById('obs-medica').value : ''
+            'TipoInscricao': tipoCadastro,
+            'Cargo': tipoCadastro,
+            'Escolaridade': isAdulto ? (document.getElementById('adulto-escolaridade') ? document.getElementById('adulto-escolaridade').value : '') : '',
+            'Profissão': isAdulto ? (document.getElementById('adulto-profissao') ? document.getElementById('adulto-profissao').value : '') : '',
+            'Nome Criança': document.getElementById('nome-crianca') ? document.getElementById('nome-crianca').value : '',
+            'Nome Pai': document.getElementById('nome-pai') ? document.getElementById('nome-pai').value : '',
+            'CPF Pai': document.getElementById('cpf-pai') ? document.getElementById('cpf-pai').value : '',
+            'Nome Mãe': document.getElementById('nome-mae') ? document.getElementById('nome-mae').value : '',
+            'CPF Mãe': document.getElementById('cpf-mae') ? document.getElementById('cpf-mae').value : '',
+            'CPF': document.getElementById('cpf-cadastro') ? document.getElementById('cpf-cadastro').value : '',
+            'CPF Responsável': cpfVal,
+            'Vínculo Responsável': isAdulto ? 'Próprio' : vinculo,
+            'Nome Outro Responsável': document.getElementById('nome-outro-responsavel') ? document.getElementById('nome-outro-responsavel').value : '',
+            'Escolaridade Pai': document.getElementById('escolaridade-pai') ? document.getElementById('escolaridade-pai').value : '',
+            'Curso Pai': '',
+            'Escolaridade Mãe': document.getElementById('escolaridade-mae') ? document.getElementById('escolaridade-mae').value : '',
+            'Curso Mãe': '',
+            'Profissional Saúde Pai': document.getElementById('saude-pai') ? document.getElementById('saude-pai').value : '',
+            'Qual Profissão Pai': document.getElementById('prof-pai') ? document.getElementById('prof-pai').value : '',
+            'Profissional Saúde Mãe': document.getElementById('saude-mae') ? document.getElementById('saude-mae').value : '',
+            'Qual Profissão Mãe': document.getElementById('prof-mae') ? document.getElementById('prof-mae').value : '',
+            'Data Nasc': document.getElementById('data-nasc') ? document.getElementById('data-nasc').value : '',
+            'Idade': idadeCalculada,
+            'Classe': classeCalculada,
+            'Sexo': document.getElementById('genero') ? document.getElementById('genero').value : '',
+            'Telefone Pai': fatherPhone,
+            'Email Pai': fatherEmail,
+            'Telefone Mãe': motherPhone,
+            'Email Mãe': motherEmail,
+            'Email Responsável': emailVal,
+            'Telefone Responsável': isAdulto 
+                ? (document.getElementById('adulto-telefone') ? document.getElementById('adulto-telefone').value : '')
+                : (document.getElementById('telefone-contato') ? document.getElementById('telefone-contato').value : ''),
+            'ReceberEmailEm': isAdulto ? 'Responsável Legal' : (document.getElementById('receber-email-em') ? document.getElementById('receber-email-em').value : 'Responsável Legal'),
+            'Batizado': document.getElementById('batizado') ? document.getElementById('batizado').value : 'Não',
+            'CEP': document.getElementById('cep') ? document.getElementById('cep').value : '',
+            'Rua': document.getElementById('rua') ? document.getElementById('rua').value : '',
+            'Número': document.getElementById('numero-end') ? document.getElementById('numero-end').value : '',
+            'Complemento': document.getElementById('complemento') ? document.getElementById('complemento').value : '',
+            'Bairro': document.getElementById('bairro') ? document.getElementById('bairro').value : '',
+            'Cidade': document.getElementById('cidade') ? document.getElementById('cidade').value : '',
+            'Estado': document.getElementById('estado') ? document.getElementById('estado').value : '',
+            'Tamanho Camiseta': document.getElementById('tam-camiseta') ? document.getElementById('tam-camiseta').value : '',
+            'Camisetas Extras': document.getElementById('extraTshirtsData') ? document.getElementById('extraTshirtsData').value : '',
+            'Contato Emergência Nome': document.getElementById('nome-emergencia') ? document.getElementById('nome-emergencia').value : '',
+            'Contato Emergência Fone': document.getElementById('telefone-emergencia') ? document.getElementById('telefone-emergencia').value : '',
+            'Cartão SUS/Plano': document.getElementById('plano-saude') && document.getElementById('plano-saude').value === 'Sim' ? document.getElementById('nome-plano').value : 'Não',
+            'Tipagem Sanguínea': document.getElementById('tipoSanguineo') ? document.getElementById('tipoSanguineo').value : '',
+            'Doenças Prévias': doencas,
+            'Alergias': document.getElementById('tem-alergia') && document.getElementById('tem-alergia').value === 'Sim' ? document.getElementById('qual-alergia').value : 'Não',
+            'Remédios para Alergias': document.getElementById('remedios-alergia') ? document.getElementById('remedios-alergia').value : '',
+            'Ferimento recente': document.getElementById('ferimento') ? document.getElementById('ferimento').value : '',
+            'Fratura recente': document.getElementById('fratura') ? document.getElementById('fratura').value : '',
+            'Tempo imobilizado': document.getElementById('imobilizado') ? document.getElementById('imobilizado').value : '',
+            'Cirurgias': document.getElementById('qual-cirurgia') ? document.getElementById('qual-cirurgia').value : '',
+            'Motivo Internação': document.getElementById('internacao') ? document.getElementById('internacao').value : '',
+            'Medicamentos Contínuos': document.getElementById('tem-medicacao') && document.getElementById('tem-medicacao').value === 'Sim' ? document.getElementById('qual-medicacao').value : 'Não',
+            'Deficiência/Condição': document.getElementById('tem-deficiencia') && document.getElementById('tem-deficiencia').value === 'Sim' ? document.getElementById('qual-deficiencia').value : 'Não',
+            'Observação Médica': document.getElementById('obs-medica') ? document.getElementById('obs-medica').value : '',
+            'FotoBase64': fotoBase64
         }
     };
 
@@ -270,6 +353,15 @@ document.getElementById('formInscricao').addEventListener('submit', async functi
 
 // Funções para controle do Modal de Sucesso
 function mostrarModalSucesso() {
+    const tipo = document.getElementById('tipo-cadastro') ? document.getElementById('tipo-cadastro').value : 'Aventureiro(a)';
+    const msgEl = document.getElementById('sucesso-mensagem');
+    if (msgEl) {
+        if (tipo !== 'Aventureiro(a)') {
+            msgEl.textContent = 'Os dados foram salvos com sucesso. A diretoria do clube fará contato em breve!';
+        } else {
+            msgEl.textContent = 'Os dados do aventureiro foram salvos com sucesso na nossa planilha. A diretoria do clube fará a avaliação em breve!';
+        }
+    }
     const modal = document.getElementById('modal-sucesso');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
@@ -281,4 +373,69 @@ function mostrarModalSucesso() {
 
 function fecharSucesso() {
     window.location.href = 'index.html';
+}
+
+// Função para preview da foto da criança
+function previewFoto(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const preview = document.getElementById('foto-preview');
+        const placeholder = document.getElementById('foto-placeholder');
+        if (preview) {
+            preview.src = e.target.result;
+            preview.classList.remove('hidden');
+        }
+        if (placeholder) placeholder.classList.add('hidden');
+    };
+    reader.readAsDataURL(file);
+}
+
+// =================== IDADE E CLASSE ===================
+function calcularIdadeEClasse() {
+    const dataNascInput = document.getElementById('data-nasc');
+    const idadeInput = document.getElementById('idade');
+    const classeInput = document.getElementById('classe');
+    const infoDiv = document.getElementById('info-idade-classe');
+    if (!dataNascInput || !dataNascInput.value) return;
+
+    const hoje = new Date();
+    const nasc = new Date(dataNascInput.value);
+    let anos = hoje.getFullYear() - nasc.getFullYear();
+    const m = hoje.getMonth() - nasc.getMonth();
+    if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) anos--;
+
+    let classe = '';
+    let icone = '';
+    if (anos <= 5)      { classe = 'Bebes/Baby'; icone = '👶'; }
+    else if (anos === 6) { classe = 'Abelhinhas Laboriosas'; icone = '🐝'; }
+    else if (anos === 7) { classe = 'Luminares'; icone = '⭐'; }
+    else if (anos === 8) { classe = 'Edificadores'; icone = '🏗️'; }
+    else if (anos === 9) { classe = 'Mãos Ajudadoras'; icone = '🤜'; }
+    else                { classe = 'Visitante'; icone = '👤'; }
+
+    if (idadeInput) idadeInput.value = anos;
+    if (classeInput) classeInput.value = classe;
+    if (infoDiv) {
+        infoDiv.innerHTML = `<span class="material-symbols-outlined text-base text-primary">child_care</span>
+            <strong>${anos} anos</strong> &mdash; Classe: <strong class="text-primary">${icone} ${classe}</strong>`;
+        infoDiv.classList.remove('text-on-surface-variant', 'italic');
+        infoDiv.classList.add('text-on-surface', 'font-medium');
+    }
+}
+
+// =================== BUSCA CEP ===================
+async function buscarCEP(cep) {
+    const numeros = cep.replace(/\D/g, '');
+    if (numeros.length !== 8) return;
+    try {
+        const res = await fetch(`https://viacep.com.br/ws/${numeros}/json/`);
+        const data = await res.json();
+        if (data.erro) return;
+        if (document.getElementById('rua')) document.getElementById('rua').value = data.logradouro || '';
+        if (document.getElementById('bairro')) document.getElementById('bairro').value = data.bairro || '';
+        if (document.getElementById('cidade')) document.getElementById('cidade').value = data.localidade || '';
+        if (document.getElementById('estado')) document.getElementById('estado').value = data.uf || '';
+    } catch(e) { /* silencia erro de rede */ }
 }

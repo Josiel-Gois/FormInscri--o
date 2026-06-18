@@ -251,16 +251,15 @@
 
         /* Loader */
         .loader-overlay {
-            position: absolute;
+            position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             background-color: rgba(250, 248, 255, 0.8);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 50;
+            z-index: 9999;
             backdrop-filter: blur(4px);
-            border-radius: 1.5rem;
         }
         .spinner {
             border: 4px solid rgba(0, 75, 195, 0.1);
@@ -533,6 +532,10 @@
                     <span class="material-symbols-outlined">manage_accounts</span>
                     <span>Usuários</span>
                 </li>
+                <li data-tab="tab-mensagens">
+                    <span class="material-symbols-outlined">mail</span>
+                    <span>Mensagens</span>
+                </li>
             </nav>
             
             <!-- Footer -->
@@ -605,47 +608,71 @@
                         <div class="flex items-center justify-between">
                             <h3 class="font-headline-md text-headline-md text-on-surface text-left font-bold text-lg">Métricas de Impacto</h3>
                         </div>
-                        <div class="flex overflow-x-auto gap-4 pb-4 no-scrollbar -mx-4 px-4 snap-x">
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
                             <!-- Stat Card 1 -->
-                            <div class="min-w-[160px] flex-1 snap-start bg-white p-5 rounded-2xl border border-outline-variant shadow-sm active:scale-[0.98] transition-transform text-left">
-                                <div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-primary mb-3">
-                                    <span class="material-symbols-outlined">groups</span>
+                            <div class="bg-white p-5 rounded-2xl border border-outline-variant shadow-sm text-left flex flex-col justify-between h-[140px] w-full">
+                                <div>
+                                    <div class="w-9 h-9 rounded-lg bg-surface-container-low flex items-center justify-center text-primary mb-2">
+                                        <span class="material-symbols-outlined text-xl">groups</span>
+                                    </div>
+                                    <p class="font-body-md text-xs text-on-surface-variant mb-0.5">Total de Inscritos</p>
                                 </div>
-                                <p class="font-body-md text-sm text-on-surface-variant mb-1">Total de Inscritos</p>
-                                <p class="font-stat-display text-3xl font-extrabold text-primary" id="stat-total">0</p>
+                                <div>
+                                    <p class="font-stat-display text-2xl font-extrabold text-primary leading-none" id="stat-total">0</p>
+                                    <p class="text-[10px] text-transparent mt-0.5 select-none leading-none">&nbsp;</p>
+                                </div>
                             </div>
                             <!-- Stat Card 2 -->
-                            <div class="min-w-[160px] flex-1 snap-start bg-white p-5 rounded-2xl border border-outline-variant shadow-sm active:scale-[0.98] transition-transform text-left">
-                                <div class="w-10 h-10 rounded-lg bg-yellow-50 flex items-center justify-center text-yellow-600 mb-3">
-                                    <span class="material-symbols-outlined">inbox</span>
+                            <div class="bg-white p-5 rounded-2xl border border-outline-variant shadow-sm text-left flex flex-col justify-between h-[140px] w-full">
+                                <div>
+                                    <div class="w-9 h-9 rounded-lg bg-yellow-50 flex items-center justify-center text-yellow-600 mb-2">
+                                        <span class="material-symbols-outlined text-xl">inbox</span>
+                                    </div>
+                                    <p class="font-body-md text-xs text-on-surface-variant mb-0.5">Inscrições Recebidas</p>
                                 </div>
-                                <p class="font-body-md text-sm text-on-surface-variant mb-1">Inscrições Recebidas</p>
-                                <p class="font-stat-display text-3xl font-extrabold text-yellow-600" id="stat-recebidas">0</p>
+                                <div>
+                                    <p class="font-stat-display text-2xl font-extrabold text-yellow-600 leading-none" id="stat-recebidas">0</p>
+                                    <p class="text-[10px] text-transparent mt-0.5 select-none leading-none">&nbsp;</p>
+                                </div>
                             </div>
                             <!-- Stat Card 3 -->
-                            <div class="min-w-[160px] flex-1 snap-start bg-white p-5 rounded-2xl border border-outline-variant shadow-sm active:scale-[0.98] transition-transform text-left">
-                                <div class="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center text-green-600 mb-3">
-                                    <span class="material-symbols-outlined">check_circle</span>
+                            <div class="bg-white p-5 rounded-2xl border border-outline-variant shadow-sm text-left flex flex-col justify-between h-[140px] w-full">
+                                <div>
+                                    <div class="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center text-green-600 mb-2">
+                                        <span class="material-symbols-outlined text-xl">check_circle</span>
+                                    </div>
+                                    <p class="font-body-md text-xs text-on-surface-variant mb-0.5">Inscrições Aceitas</p>
                                 </div>
-                                <p class="font-body-md text-sm text-on-surface-variant mb-1">Inscrições Aceitas</p>
-                                <p class="font-stat-display text-3xl font-extrabold text-green-600" id="stat-aceitas">0</p>
+                                <div>
+                                    <p class="font-stat-display text-2xl font-extrabold text-green-600 leading-none" id="stat-aceitas">0</p>
+                                    <p class="text-[10px] text-transparent mt-0.5 select-none leading-none">&nbsp;</p>
+                                </div>
                             </div>
                             <!-- Stat Card 4 -->
-                            <div class="min-w-[160px] flex-1 snap-start bg-white p-5 rounded-2xl border border-outline-variant shadow-sm active:scale-[0.98] transition-transform text-left">
-                                <div class="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 mb-3">
-                                    <span class="material-symbols-outlined">volunteer_activism</span>
+                            <div class="bg-white p-5 rounded-2xl border border-outline-variant shadow-sm text-left flex flex-col justify-between h-[140px] w-full">
+                                <div>
+                                    <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 mb-2">
+                                        <span class="material-symbols-outlined text-xl">task_alt</span>
+                                    </div>
+                                    <p class="font-body-md text-xs text-on-surface-variant mb-0.5">Inscrições Finalizadas</p>
                                 </div>
-                                <p class="font-body-md text-sm text-on-surface-variant mb-1">Apoiadores do Mês</p>
-                                <p class="font-stat-display text-3xl font-extrabold text-purple-600" id="stat-apoiadores">0</p>
-                                <p class="text-xs text-purple-500 font-semibold mt-1" id="stat-apoiadores-valor">R$ 0,00 doados</p>
+                                <div>
+                                    <p class="font-stat-display text-2xl font-extrabold text-blue-600 leading-none" id="stat-finalizadas">0</p>
+                                    <p class="text-[10px] text-transparent mt-0.5 select-none leading-none">&nbsp;</p>
+                                </div>
                             </div>
                             <!-- Stat Card 5 -->
-                            <div class="min-w-[160px] flex-1 snap-start bg-white p-5 rounded-2xl border border-outline-variant shadow-sm active:scale-[0.98] transition-transform text-left">
-                                <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 mb-3">
-                                    <span class="material-symbols-outlined">task_alt</span>
+                            <div class="bg-white p-5 rounded-2xl border border-outline-variant shadow-sm text-left flex flex-col justify-between h-[140px] w-full">
+                                <div>
+                                    <div class="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 mb-2">
+                                        <span class="material-symbols-outlined text-xl">volunteer_activism</span>
+                                    </div>
+                                    <p class="font-body-md text-xs text-on-surface-variant mb-0.5">Apoiadores do Mês</p>
                                 </div>
-                                <p class="font-body-md text-sm text-on-surface-variant mb-1">Inscrições Finalizadas</p>
-                                <p class="font-stat-display text-3xl font-extrabold text-blue-600" id="stat-finalizadas">0</p>
+                                <div>
+                                    <p class="font-stat-display text-2xl font-extrabold text-purple-600 leading-none" id="stat-apoiadores">0</p>
+                                    <p class="text-[10px] text-purple-500 font-semibold mt-0.5 leading-none" id="stat-apoiadores-valor">R$ 0,00 doados</p>
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -774,6 +801,7 @@
                         <table class="w-full border-collapse text-left text-sm" id="table-inscricoes">
                             <thead>
                                 <tr class="bg-surface-container border-b border-outline-variant">
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Foto</th>
                                     <th class="px-6 py-4 font-label-bold text-on-surface-variant">Nome da Criança</th>
                                     <th class="px-6 py-4 font-label-bold text-on-surface-variant">Idade</th>
                                     <th class="px-6 py-4 font-label-bold text-on-surface-variant">Responsável</th>
@@ -1048,6 +1076,41 @@
                     </div>
                 </section>
 
+                <!-- TAB: MENSAGENS -->
+                <section id="tab-mensagens" class="tab-content hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-left">
+                        <div>
+                            <h2 class="font-headline-lg text-xl font-bold text-primary">Mensagens e E-mails</h2>
+                            <p class="text-sm text-on-surface-variant">Gerencie os modelos de e-mail cadastrados e faça disparos manuais em lote.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" class="btn" onclick="openCreateMensagem()">
+                                <span class="material-symbols-outlined">add</span> Novo Modelo
+                            </button>
+                            <button type="button" class="btn btn-outline" onclick="openBulkEmailModal()">
+                                <span class="material-symbols-outlined">send</span> Enviar E-mail (Lote)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant shadow-sm space-y-4">
+                        <div class="overflow-x-auto w-full">
+                            <table class="w-full text-left border-collapse" id="table-mensagens">
+                                <thead>
+                                    <tr>
+                                        <th>Gatilho / ID</th>
+                                        <th>Assunto</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-mensagens">
+                                    <!-- Rendered dynamically by admin.js -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
             </main>
         </div>
     </div>
@@ -1060,7 +1123,17 @@
             <h3>Editar Inscrição</h3>
             <form id="form-edit-status">
                 <input type="hidden" id="edit-row-id">
-                <p id="edit-child-name" style="margin-bottom: 15px; font-weight: bold;"></p>
+                
+                <div class="flex flex-col items-center mb-4">
+                    <img id="edit-preview-foto" src="" alt="Sem foto" class="w-24 h-24 rounded-full object-cover bg-gray-100 border mb-2" style="display:none;">
+                    <label class="text-sm font-semibold text-primary cursor-pointer hover:underline flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[18px]">add_a_photo</span>
+                        Atualizar Foto
+                        <input type="file" id="edit-foto" accept="image/*" class="hidden" onchange="previewEditFoto(this)">
+                    </label>
+                </div>
+                
+                <p id="edit-child-name" style="margin-bottom: 15px; font-weight: bold; text-align: center;"></p>
                 <div class="input-group">
                     <label>Status da Inscrição:</label>
                     <select id="edit-status" required>
@@ -1081,6 +1154,75 @@
                 <div class="modal-actions">
                     <button type="button" class="btn btn-outline" onclick="closeModal('modal-edit-status')">Cancelar</button>
                     <button type="submit" class="btn">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+ 
+    <!-- Modal Cadastro/Edição de Mensagem -->
+    <div id="modal-mensagem" class="modal-overlay hidden">
+        <div class="modal-content !max-w-xl">
+            <h3 id="modal-mensagem-title">Modelo de Mensagem</h3>
+            <form id="form-mensagem">
+                <input type="hidden" id="msg-mode" value="create">
+                <div class="input-group">
+                    <label>ID / Gatilho (Ex: boas-vindas, cobranca-inadimplentes) *</label>
+                    <input type="text" id="msg-id" required placeholder="Use letras, números e hífen apenas.">
+                    <p class="text-xs text-outline">O ID "boas-vindas" é disparado automaticamente na inscrição.</p>
+                </div>
+                <div class="input-group">
+                    <label>Assunto do E-mail *</label>
+                    <input type="text" id="msg-assunto" required placeholder="Assunto do e-mail...">
+                </div>
+                <div class="input-group">
+                    <label class="flex justify-between">
+                        <span>Corpo do E-mail *</span>
+                        <span class="text-xs text-primary bg-primary-container px-2 py-1 rounded-full cursor-help" title="Use as tags para personalizar a mensagem">Tags Disponíveis</span>
+                    </label>
+                    <div class="text-xs text-on-surface-variant flex flex-wrap gap-2 mb-2">
+                        <button type="button" class="bg-surface border border-outline px-2 py-1 rounded hover:bg-surface-container" onclick="insertTag('msg-corpo', '{{Nome Criança}}')">{{Nome Criança}}</button>
+                        <button type="button" class="bg-surface border border-outline px-2 py-1 rounded hover:bg-surface-container" onclick="insertTag('msg-corpo', '{{Nome Responsável}}')">{{Nome Responsável}}</button>
+                        <button type="button" class="bg-surface border border-outline px-2 py-1 rounded hover:bg-surface-container" onclick="insertTag('msg-corpo', '{{Classe}}')">{{Classe}}</button>
+                    </div>
+                    <textarea id="msg-corpo" rows="10" required class="input-field border border-outline-variant rounded-lg p-3 w-full font-mono text-sm" placeholder="Mensagem..."></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-mensagem')">Cancelar</button>
+                    <button type="submit" class="btn">Salvar Modelo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Envio em Lote (Bulk Email) -->
+    <div id="modal-bulk-email" class="modal-overlay hidden">
+        <div class="modal-content !max-w-xl">
+            <h3>Enviar E-mail em Lote</h3>
+            <form id="form-bulk-email">
+                <div class="input-group">
+                    <label>Selecione o Modelo de Mensagem:</label>
+                    <select id="bulk-email-template" required>
+                        <!-- Populated dynamically by admin.js -->
+                    </select>
+                </div>
+                <div class="input-group">
+                    <div class="flex justify-between items-center mb-1">
+                        <label>Contatos a Enviar:</label>
+                        <div class="flex gap-2 text-xs">
+                            <button type="button" class="text-primary hover:underline font-semibold" onclick="toggleSelectAllBulk(true)">Selecionar Todos</button>
+                            <span class="text-outline">|</span>
+                            <button type="button" class="text-primary hover:underline font-semibold" onclick="toggleSelectAllBulk(false)">Limpar Seleção</button>
+                        </div>
+                    </div>
+                    <div id="bulk-contacts-list" class="max-h-60 overflow-y-auto space-y-2 border border-outline-variant p-3 rounded-lg bg-surface">
+                        <!-- Checkboxes populated dynamically by admin.js -->
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-bulk-email')">Cancelar</button>
+                    <button type="submit" class="btn flex items-center gap-2">
+                        <span class="material-symbols-outlined">send</span> Enviar E-mails
+                    </button>
                 </div>
             </form>
         </div>
@@ -1424,13 +1566,17 @@
                     <select id="usuario-nivel" required>
                         <option value="Admin">Administrador</option>
                         <option value="Diretor">Diretor</option>
+                        <option value="Pastor">Pastor</option>
                         <option value="Secretário">Secretário</option>
                         <option value="Conselheiro">Conselheiro</option>
                     </select>
                 </div>
                 <div class="input-group">
                     <label>Foto de Perfil (Opcional):</label>
-                    <input type="file" id="usuario-foto" accept="image/*" class="text-sm">
+                    <div class="flex items-center gap-4 mt-2">
+                        <img id="usuario-preview-foto" class="w-16 h-16 rounded-full object-cover border border-outline-variant" style="display: none;">
+                        <input type="file" id="usuario-foto" accept="image/*" class="text-sm" onchange="previewUsuarioFoto(this)">
+                    </div>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-outline" onclick="closeModal('modal-usuario')">Cancelar</button>
@@ -1744,7 +1890,18 @@
         </div>
     </div>
 
-    <script src="config.js"></script>
+    <!-- Modal Alerta de Acesso Negado -->
+    <div id="modal-acesso-negado" class="modal-overlay hidden">
+        <div class="modal-content !max-w-md text-center p-8 bg-surface border border-outline-variant rounded-2xl shadow-2xl relative flex flex-col items-center">
+            <span class="material-symbols-outlined text-error mb-4" style="color: #dc3545; font-size: 64px;">gavel</span>
+            <h3 class="text-xl font-bold text-on-surface mb-2" style="color: var(--dark);">Acesso Restrito</h3>
+            <p class="text-sm text-outline mb-6" style="color: var(--text); margin-bottom: 20px;">Você não tem acesso, solicite acesso ao administrador.</p>
+            <button class="btn w-full" style="width: 100%;" onclick="closeModal('modal-acesso-negado')">Entendido</button>
+        </div>
+    </div>
+
+    <!-- Scripts: A ordem importa -->
+    <script src="config.js?v=3"></script>
     <script src="admin.js"></script>
     <script>
         const menuToggle = document.getElementById('menu-toggle');

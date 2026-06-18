@@ -10,6 +10,34 @@ let appData = {
     calendario: []
 };
 
+function getVal(obj, key) {
+    if (!obj) return '';
+    const cleanKey = String(key).trim().toLowerCase();
+    const foundKey = Object.keys(obj).find(k => String(k).trim().toLowerCase() === cleanKey);
+    return foundKey ? obj[foundKey] : '';
+}
+
+function normalizeImageUrl(url) {
+    if (!url) return '';
+    if (url.startsWith('data:')) return url;
+    let fileId = '';
+    if (url.includes('drive.google.com')) {
+        const idMatch = url.match(/[?&]id=([^&]+)/);
+        if (idMatch) {
+            fileId = idMatch[1];
+        } else {
+            const dMatch = url.match(/\/file\/d\/([^/]+)/);
+            if (dMatch) {
+                fileId = dMatch[1];
+            }
+        }
+    }
+    if (fileId) {
+        return `https://lh3.googleusercontent.com/d/${fileId}`;
+    }
+    return url;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     checkLogin();
 
@@ -304,8 +332,8 @@ function checkLogin() {
         
 const welcomeEl = document.getElementById('user-greeting');
         if (welcomeEl) {
-            const gender = String(user.gender || user.genero || user.sexo || '').toLowerCase();
-            const prefix = /(masculino|male|m)$/i.test(gender) ? 'Bem-vindo' : 'Bem-vinda';
+            const gender = String(user.gender || user.genero || user.sexo || '').toLowerCase().trim();
+            const prefix = /(masculino|male|m)$/i.test(gender) ? 'Bem-vindo' : (/(feminino|female|f)$/i.test(gender) ? 'Bem-vinda' : 'Bem-vindo(a)');
             welcomeEl.textContent = `${prefix}, ${user.name || user.Nome || 'usuário'}`;
         }
         
@@ -323,7 +351,7 @@ const welcomeEl = document.getElementById('user-greeting');
 function renderUserAvatar(user) {
     const container = document.getElementById('user-avatar-container');
     if (!container) return;
-    const photo = user.foto || user.Foto || user.photo || user.image || user.avatar || user.fotoBase64 || user.FotoBase64;
+    const photo = normalizeImageUrl(user.foto || user.Foto || user.photo || user.image || user.avatar || user.fotoBase64 || user.FotoBase64);
     const name = user.name || user.Nome || 'Usuário';
     if (photo) {
         container.innerHTML = `<img src="${photo}" alt="${name}" class="w-full h-full object-cover">`;
@@ -351,27 +379,32 @@ function renderUserAvatar(user) {
     `;
 }
 
+function isPastor() {
+    const user = JSON.parse(localStorage.getItem('icebergUser'));
+    return user && user.role === 'Pastor';
+}
+
 function hasFullAccess() {
     const user = JSON.parse(localStorage.getItem('icebergUser'));
-    return user && (user.role === 'Admin' || user.role === 'Diretor');
+    return user && (user.role === 'Admin' || user.role === 'Diretor' || user.role === 'Pastor');
 }
 
 function applyRoleAccess(role) {
-    const isFullAccess = (role === 'Admin' || role === 'Diretor');
+    const isAuthorizedSidebar = (role === 'Admin' || role === 'Diretor' || role === 'Pastor');
     
     // Oculta/mostra guias no sidebar
     const sidebarItems = document.querySelectorAll('.nav-links li');
     sidebarItems.forEach(item => {
         const tabName = item.dataset.tab;
-        if (!isFullAccess && tabName !== 'tab-dashboard' && tabName !== 'tab-calendario') {
+        if (!isAuthorizedSidebar && tabName !== 'tab-dashboard' && tabName !== 'tab-calendario') {
             item.classList.add('hidden');
         } else {
             item.classList.remove('hidden');
         }
     });
 
-    // Se o usuário não tem acesso total e está em uma aba restrita, redireciona para o dashboard
-    if (!isFullAccess) {
+    // Se o usuário não tem autorização para ver todas as abas e está em uma aba restrita, redireciona para o dashboard
+    if (!isAuthorizedSidebar) {
         const activeItem = document.querySelector('.nav-links li.active');
         if (activeItem) {
             const activeTab = activeItem.dataset.tab;
@@ -402,6 +435,7 @@ async function loadAllData() {
         appData.calendario = allData.calendario || [];
         appData.usuarios = allData.usuarios || [];
         appData.financeiro = allData.financeiro || [];
+        appData.mensagens = allData.mensagens || [];
         
         populateChildDropdown();
         
@@ -413,6 +447,7 @@ async function loadAllData() {
         renderCalendario();
         renderFinanceiro();
         renderUsuarios();
+        if (typeof renderMensagens === 'function') renderMensagens();
     } catch (error) {
         console.error("Erro ao carregar dados", error);
     }
@@ -590,23 +625,36 @@ function renderInscricoes() {
         if (status === 'Cadastro finalizado') badgeClass = 'status-finalizado';
         if (status === 'Cancelada') badgeClass = 'status-cancelada';
 
+        let displayCargo = insc.Cargo || insc.TipoInscricao || 'Aventureiro';
+        if (displayCargo === 'Aventureiro') displayCargo = 'Aventureiro(a)';
+
         let actionHtml = '';
         if (hasFullAccess()) {
-            actionHtml += `<button class="btn btn-sm btn-edit" onclick="openEditStatus(${insc._row}, '${nome}', '${status}', '${insc.Cargo}')">Editar</button> `;
+            actionHtml += `<button class="btn btn-sm btn-edit" onclick="openEditStatus(${insc._row}, '${nome.replace(/'/g, "\\'")}', '${status}', '${(insc.Cargo || insc.TipoInscricao || '').replace(/'/g, "\\'")}')">Editar</button> `;
         }
         actionHtml += `<button class="btn btn-sm" onclick="printFichaSingle(${insc._row})">Imprimir</button>`;
         if (hasFullAccess()) {
             actionHtml += ` <button class="btn btn-sm btn-danger" onclick="deleteRow('Inscricoes', ${insc._row})">Excluir</button>`;
         }
 
+        const foto = normalizeImageUrl(getVal(insc, 'FotoBase64') || getVal(insc, 'Foto') || insc.FotoBase64 || insc.fotoBase64 || '');
+        let fotoHtml = '';
+        if (foto) {
+            fotoHtml = `<img src="${foto}" class="w-10 h-10 rounded-full object-cover border border-outline-variant">`;
+        } else {
+            const initials = nome.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            fotoHtml = `<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-xs">${initials}</div>`;
+        }
+
         tbody.innerHTML += `
             <tr>
-                <td><strong>${nome}</strong></td>
-                <td>${insc.Idade || ''} anos</td>
-                <td>${responsavel}</td>
-                <td><span class="status-badge ${badgeClass}">${status}</span></td>
-                <td>${insc.Cargo || 'Aventureiro(a)'}</td>
-                <td>
+                <td class="px-6 py-4">${fotoHtml}</td>
+                <td class="px-6 py-4"><strong>${nome}</strong></td>
+                <td class="px-6 py-4">${insc.Idade || ''} anos</td>
+                <td class="px-6 py-4">${responsavel}</td>
+                <td class="px-6 py-4"><span class="status-badge ${badgeClass}">${status}</span></td>
+                <td class="px-6 py-4">${displayCargo}</td>
+                <td class="px-6 py-4 text-right">
                     ${actionHtml}
                 </td>
             </tr>
@@ -755,7 +803,24 @@ function renderCalendario() {
 
 // ================= MODALS & ACTIONS =================
 
-function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function openModal(id) {
+    if (isPastor()) {
+        const crudModals = [
+            'modal-apoiador', 'modal-editar-apoiador',
+            'modal-financeiro-entrada', 'modal-financeiro-saida',
+            'modal-edit-status', 'modal-mensagem',
+            'modal-atividade', 'modal-editar-atividade',
+            'modal-editar-apontamento',
+            'modal-novo-evento', 'modal-editar-calendario',
+            'modal-usuario', 'modal-bulk-email'
+        ];
+        if (crudModals.includes(id)) {
+            document.getElementById('modal-acesso-negado').classList.remove('hidden');
+            return;
+        }
+    }
+    document.getElementById(id).classList.remove('hidden');
+}
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
 function openNewEntradaModal() {
@@ -844,8 +909,47 @@ function openEditStatus(row, nome, status, cargo) {
     document.getElementById('edit-row-id').value = row;
     document.getElementById('edit-child-name').textContent = `Inscrito: ${nome}`;
     document.getElementById('edit-status').value = status;
-    document.getElementById('edit-cargo').value = cargo || 'Aventureiro(a)';
+    
+    let safeCargo = cargo || 'Aventureiro';
+    if (safeCargo === 'Membro de Diretoria' || safeCargo === 'Membro da Diretoria') {
+        safeCargo = 'Membro da Diretoria';
+    } else if (safeCargo === 'Aventureiro' || safeCargo === 'Aventureiro(a)') {
+        safeCargo = 'Aventureiro(a)';
+    } else if (safeCargo === 'Pais' || safeCargo === 'Pai' || safeCargo === 'Mãe') {
+        safeCargo = 'Pais';
+    }
+    document.getElementById('edit-cargo').value = safeCargo;
+
+    const insc = appData.inscricoes.find(i => i._row === row);
+    const foto = insc ? normalizeImageUrl(getVal(insc, 'FotoBase64') || getVal(insc, 'Foto') || insc.FotoBase64 || insc.fotoBase64 || '') : '';
+    const imgPreview = document.getElementById('edit-preview-foto');
+    if (imgPreview) {
+        if (foto) {
+            imgPreview.src = foto;
+            imgPreview.style.display = 'block';
+        } else {
+            imgPreview.src = '';
+            imgPreview.style.display = 'none';
+        }
+    }
+    const fileInput = document.getElementById('edit-foto');
+    if (fileInput) fileInput.value = '';
+
     openModal('modal-edit-status');
+}
+
+function previewEditFoto(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const preview = document.getElementById('edit-preview-foto');
+        if (preview) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        }
+    };
+    reader.readAsDataURL(file);
 }
 
 function openEditApoiador(row, nome, detalhe, telefone, email) {
@@ -891,11 +995,23 @@ function openEditCalendario(row, data, nome, cat, det) {
 document.getElementById('form-edit-status').addEventListener('submit', async (e) => {
     e.preventDefault();
     showLoader(true);
+    
+    const fileInput = document.getElementById('edit-foto');
+    let fotoBase64 = '';
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+        try {
+            fotoBase64 = await getBase64(fileInput.files[0]);
+        } catch(err) {
+            console.error('Erro ao ler arquivo da foto', err);
+        }
+    }
+
     await fetchPOST({ 
-        action: 'updateInscricao', 
+        action: 'updateStatus', 
         row: document.getElementById('edit-row-id').value, 
         status: document.getElementById('edit-status').value, 
-        cargo: document.getElementById('edit-cargo').value 
+        cargo: document.getElementById('edit-cargo').value === 'Aventureiro(a)' ? 'Aventureiro' : document.getElementById('edit-cargo').value,
+        FotoBase64: fotoBase64
     });
     closeModal('modal-edit-status');
     setTimeout(loadAllData, 1500);
@@ -1061,6 +1177,10 @@ window.seedCalendario = async () => {
 };
 
 async function deleteRow(sheetName, row) {
+    if (isPastor()) {
+        openModal('modal-acesso-negado');
+        return;
+    }
     if(confirm('Tem certeza que deseja excluir?')) {
         showLoader(true);
         await fetchPOST({ action: 'deleteRow', sheetName, row });
@@ -1186,6 +1306,13 @@ document.getElementById('form-relatorio-pontos').addEventListener('submit', (e) 
 
 // Ficha PDF Engine
 function drawFichaFields(doc, insc) {
+    const drawPageBorder = () => {
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.5);
+        doc.rect(8, 8, 194, 281);
+    };
+    drawPageBorder();
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
     doc.setTextColor(13, 110, 253);
@@ -1199,13 +1326,13 @@ function drawFichaFields(doc, insc) {
     const lineSpace = 6;
     
     const addLine = (label, value) => {
-        if(startY > 280) { doc.addPage(); startY = 20; }
+        if(startY > 280) { doc.addPage(); drawPageBorder(); startY = 20; }
         doc.setFont("helvetica", "bold"); doc.text(`${label}:`, 15, startY);
         doc.setFont("helvetica", "normal"); doc.text(`${value || '---'}`, 60, startY);
         startY += lineSpace;
     };
     const addSection = (title) => {
-        if(startY > 270) { doc.addPage(); startY = 20; }
+        if(startY > 270) { doc.addPage(); drawPageBorder(); startY = 20; }
         startY += 4;
         doc.setFont("helvetica", "bold"); doc.setTextColor(13, 110, 253);
         doc.text(title, 15, startY);
@@ -1213,23 +1340,47 @@ function drawFichaFields(doc, insc) {
         startY += lineSpace;
     };
 
+    const isAdulto = (insc['Cargo'] && insc['Cargo'] !== 'Aventureiro' && insc['Cargo'] !== 'Aventureiro(a)') || (insc['TipoInscricao'] && insc['TipoInscricao'] !== 'Aventureiro(a)');
+
     addSection("Dados Básicos");
-    addLine("Nome da Criança", insc['Nome Criança']);
+    if (isAdulto) {
+        addLine("Nome do Membro", insc['Nome Criança']);
+    } else {
+        addLine("Nome da Criança", insc['Nome Criança']);
+    }
     addLine("Data Nascimento", insc['Data Nasc'] ? new Date(insc['Data Nasc']).toLocaleDateString('pt-BR') : '');
     addLine("Idade / Sexo", `${insc.Idade} anos / ${insc.Sexo}`);
     addLine("Camiseta / Extra", `${insc['Tamanho Camiseta']} / ${insc['Camisetas Extras']}`);
     
-    addSection("Filiação");
-    addLine("Responsável Legal", insc['Nome Pai']);
-    addLine("CPF Responsável", insc['CPF Responsável']);
-    addLine("Contato/E-mail", `${insc['Telefone Pai']} / ${insc['Email Pai']}`);
-    addLine("Escolaridade (Pai)", `${insc['Escolaridade Pai']} - ${insc['Curso Pai']}`);
-    addLine("Prof Saúde (Pai)", `${insc['Profissional Saúde Pai']} - ${insc['Qual Profissão Pai']}`);
+    if (isAdulto) {
+        addLine("CPF", getVal(insc, 'CPF'));
+        addLine("Escolaridade", getVal(insc, 'Escolaridade'));
+        addLine("Profissão", getVal(insc, 'Profissão') || getVal(insc, 'Profissao'));
+        addLine("Religião", getVal(insc, 'Religião') || getVal(insc, 'Religiao'));
+        addLine("Igreja", getVal(insc, 'Igreja') || getVal(insc, 'Igreja que frequenta') || getVal(insc, 'Nome da Igreja que frequenta'));
+    }
     
-    addLine("Mãe", insc['Nome Mãe']);
-    addLine("Contato Mãe", `${insc['Telefone Mãe']} / ${insc['Email Mãe']}`);
-    addLine("Escolaridade (Mãe)", `${insc['Escolaridade Mãe']} - ${insc['Curso Mãe']}`);
-    addLine("Prof Saúde (Mãe)", `${insc['Profissional Saúde Mãe']} - ${insc['Qual Profissão Mãe']}`);
+    addSection("Endereço");
+    addLine("CEP", getVal(insc, "CEP"));
+    addLine("Rua / Número", `${getVal(insc, "Rua") || ''}, nº ${getVal(insc, "Número") || getVal(insc, "numero") || ''} ${getVal(insc, "Complemento") ? '(' + getVal(insc, "Complemento") + ')' : ''}`);
+    addLine("Bairro", getVal(insc, "Bairro"));
+    addLine("Cidade / Estado", `${getVal(insc, "Cidade") || ''} - ${getVal(insc, "Estado") || ''}`);
+    
+    addSection("Filiação");
+    addLine("Pai / Resp. Legal", getVal(insc, 'Nome Pai') || getVal(insc, 'Pai'));
+    const cpfPaiVal = getVal(insc, 'CPF Pai') || getVal(insc, 'cpfPai') || getVal(insc, 'cpf-pai');
+    if (cpfPaiVal) addLine("CPF Pai", cpfPaiVal);
+    addLine("CPF Responsável", getVal(insc, 'CPF Responsável') || getVal(insc, 'CPF'));
+    addLine("Contato/E-mail (Pai)", `${getVal(insc, 'Telefone Pai')} / ${getVal(insc, 'Email Pai')}`);
+    addLine("Escolaridade (Pai)", `${getVal(insc, 'Escolaridade Pai')} - ${getVal(insc, 'Curso Pai')}`);
+    addLine("Prof Saúde (Pai)", `${getVal(insc, 'Profissional Saúde Pai')} - ${getVal(insc, 'Qual Profissão Pai')}`);
+    
+    addLine("Mãe", getVal(insc, 'Nome Mãe') || getVal(insc, 'Mãe'));
+    const cpfMaeVal = getVal(insc, 'CPF Mãe') || getVal(insc, 'cpfMae') || getVal(insc, 'cpf-mae');
+    if (cpfMaeVal) addLine("CPF Mãe", cpfMaeVal);
+    addLine("Contato Mãe", `${getVal(insc, 'Telefone Mãe')} / ${getVal(insc, 'Email Mãe')}`);
+    addLine("Escolaridade (Mãe)", `${getVal(insc, 'Escolaridade Mãe')} - ${getVal(insc, 'Curso Mãe')}`);
+    addLine("Prof Saúde (Mãe)", `${getVal(insc, 'Profissional Saúde Mãe')} - ${getVal(insc, 'Qual Profissão Mãe')}`);
     
     addSection("Ficha Médica");
     addLine("Emergência", `${insc['Contato Emergência Nome']} (${insc['Contato Emergência Fone']})`);
@@ -1256,11 +1407,25 @@ function drawFichaFields(doc, insc) {
     addTextWrapped("Med. Contínuos", insc['Medicamentos Contínuos']);
     addTextWrapped("Deficiência", insc['Deficiência/Condição']);
     addTextWrapped("Obs. Médica", insc['Observação Médica']);
+
+    // Linha de Assinatura na Ficha Médica
+    startY += 8;
+    if (startY > 270) { doc.addPage(); drawPageBorder(); startY = 20; }
+    doc.setFont("helvetica", "normal");
+    doc.line(15, startY, 95, startY);
+    doc.line(115, startY, 195, startY);
+    doc.setFontSize(8);
+    doc.text(isAdulto ? "Assinatura do Membro" : "Assinatura do Responsável", 55, startY + 4, null, null, "center");
+    doc.text("Secretaria do Clube", 155, startY + 4, null, null, "center");
 }
 
 // Master PDF logic - Gera Ficha Médica (sem termo embutido)
 async function drawTermoAdesao(doc, insc) {
     doc.addPage();
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.5);
+    doc.rect(8, 8, 194, 281);
+    
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(13, 110, 253);
@@ -1271,15 +1436,23 @@ async function drawTermoAdesao(doc, insc) {
     doc.setTextColor(0, 0, 0);
     const now = new Date();
     const dateText = now.toLocaleDateString('pt-BR');
+    
+    const isAdulto = (insc['Cargo'] && insc['Cargo'] !== 'Aventureiro' && insc['Cargo'] !== 'Aventureiro(a)') || (insc['TipoInscricao'] && insc['TipoInscricao'] !== 'Aventureiro(a)');
+
     const lines = [
         'Clube: ICEBERG KIDS',
         'Igreja: 225 - PLANTA SÃO MARCOS',
         'Distrito: PLANTA SÃO MARCOS',
         'Associação/Missão: ASSOCIAÇÃO SUL PARANAENSE',
-        `Nome completo: ${insc['Nome Criança'] || '---'}`,
-        `Nome do Responsável: ${insc['Nome Pai'] || insc['Nome Mãe'] || insc['Nome do Responsável'] || insc['Responsável'] || '---'}`,
-        `Documento (CPF ou RG): ${insc['CPF Responsável'] || insc['CPF'] || insc['Documento'] || '---'}`
+        `Nome completo: ${insc['Nome Criança'] || '---'}`
     ];
+    if (!isAdulto) {
+        lines.push(`Nome do Responsável: ${insc['Nome Pai'] || insc['Nome Mãe'] || insc['Nome do Responsável'] || insc['Responsável'] || '---'}`);
+        lines.push(`Documento (CPF ou RG): ${insc['CPF Responsável'] || insc['CPF'] || insc['Documento'] || '---'}`);
+    } else {
+        lines.push(`Documento (CPF ou RG): ${insc['CPF'] || insc['CPF Responsável'] || insc['Documento'] || '---'}`);
+    }
+
     let cursorY = 32;
     lines.forEach(line => {
         doc.text(line, 15, cursorY);
@@ -1287,12 +1460,18 @@ async function drawTermoAdesao(doc, insc) {
     });
     cursorY += 4;
 
-    const termoText = `Autorizo meu filho/dependente legal a participar do "ICEBERG KIDS" , organização vinculada a IGREJA ADVENTISTA DO SÉTIMO DIA que tem o objetivo de promover o desenvolvimento físico, mental e espiritual das crianças e adolescentes, através de atividades didáticas e lúdicas que ocorrem semanalmente, além de acampamentos, caminhadas e atividades cívicas. O programa do é destinado a meninos e meninas de a anos sem qualquer distinção de etnia, religião ou classe social. Me comprometo a conhecer e respeitar as normas do "ICEBERG KIDS" e a auxiliar que meu filho/dependente legal também as cumpra. Para garantir a segurança do meu filho/dependente legal autorizo o registro, armazenamento e tratamento dos dados contidos nessa ficha de matrícula, bem como do histórico de conquistas e de participações em eventos. O "ICEBERG KIDS" utiliza esses dados para efetivar seguros, agilizar atendimentos de emergência, e proporcionar acesso às ferramentas e aplicativos. O armazenamento e tratamento dos dados dos membros do "ICEBERG KIDS" é feito de acordo com a Lei nº 13.709/2018 - Lei Geral de Proteção de Dados Pessoais (LGPD) e a Política de Privacidade de Dados da IGREJA ADVENTISTA DO SÉTIMO DIA, conforme descrito em https://adv.st/privacidade/.`;
+    let termoText = '';
+    if (!isAdulto) {
+        termoText = `Autorizo meu filho/dependente legal a participar do "ICEBERG KIDS" , organização vinculada a IGREJA ADVENTISTA DO SÉTIMO DIA que tem o objetivo de promover o desenvolvimento físico, mental e espiritual das crianças e adolescentes, através de atividades didáticas e lúdicas que ocorrem quinzenalmente, além de acampamentos, caminhadas e atividades cívicas. O programa é destinado a meninos e meninas de 6 a 9 anos sem qualquer distinção de etnia, religião ou classe social. Me comprometo a conhecer e respeitar as normas do "ICEBERG KIDS" e a auxiliar que meu filho/dependente legal também as cumpra. Para garantir a segurança do meu filho/dependente legal autorizo o registro, armazenamento e tratamento dos dados contidos nessa ficha de matrícula, bem como do histórico de conquistas e de participações em eventos. O "ICEBERG KIDS" utiliza esses dados para efetivar seguros, agilizar atendimentos de emergência, e proporcionar acesso às ferramentas e aplicativos. O armazenamento e tratamento dos dados dos membros do "ICEBERG KIDS" é feito de acordo com a Lei nº 13.709/2018 - Lei Geral de Proteção de Dados Pessoais (LGPD) e a Política de Privacidade de Dados da IGREJA ADVENTISTA DO SÉTIMO DIA, conforme descrito em https://adv.st/privacidade/.`;
+    } else {
+        termoText = `Eu me comprometo a participar ativamente e apoiar as atividades do "ICEBERG KIDS", organização vinculada a IGREJA ADVENTISTA DO SÉTIMO DIA que tem o objetivo de promover o desenvolvimento físico, mental e espiritual das crianças e adolescentes, através de atividades didáticas e lúdicas que ocorrem quinzenalmente, além de acampamentos, caminhadas e atividades cívicas. Me comprometo a conhecer e respeitar as normas do "ICEBERG KIDS". Para garantir a segurança e organização de todos, autorizo o registro, armazenamento e tratamento dos meus dados contidos nessa ficha de matrícula. O "ICEBERG KIDS" utiliza esses dados para efetivar seguros e proporcionar acesso às ferramentas e aplicativos. O armazenamento e tratamento dos meus dados de membro do "ICEBERG KIDS" é feito de acordo com a Lei nº 13.709/2018 - Lei Geral de Proteção de Dados Pessoais (LGPD) e a Política de Privacidade de Dados da IGREJA ADVENTISTA DO SÉTIMO DIA, conforme descrito em https://adv.st/privacidade/.`;
+    }
+
     const termoLines = doc.splitTextToSize(termoText, 180);
     doc.text(termoLines, 15, cursorY);
     cursorY += termoLines.length * 5 + 6;
 
-    const autorizacaoText = `___________________________________________________ VISTO`;
+    const autorizacaoText = isAdulto ? `___________________________________________________ ASSINATURA` : `___________________________________________________ VISTO`;
     doc.text(autorizacaoText, 15, cursorY);
     cursorY += 8;
 
@@ -1302,12 +1481,18 @@ async function drawTermoAdesao(doc, insc) {
     doc.setFont('helvetica', 'normal');
     cursorY += 6;
 
-    const voiceBody = `Voz e Imagem: Autorizo a utilização de voz e imagem do meu filho/dependente legal, para divulgação das atividades do "ICEBERG KIDS", por meio físico ou digital, nas redes sociais e páginas oficiais ligadas ao e demais meios de comunicação, de forma gratuita, servindo este documento como Instrumento de Cessão. ( ) AUTORIZO ( ) NÃO AUTORIZO Estou ciente que posso solicitar que algum dado seja acrescentado, alterado ou excluído pelo "ICEBERG KIDS" através do e-mail`;
+    let voiceBody = '';
+    if (!isAdulto) {
+        voiceBody = `Voz e Imagem: Autorizo a utilização de voz e imagem do meu filho/dependente legal, para divulgação das atividades do "ICEBERG KIDS", por meio físico ou digital, nas redes sociais e páginas oficiais ligadas ao clube e demais meios de comunicação, de forma gratuita, servindo este documento como Instrumento de Cessão. ( ) AUTORIZO ( ) NÃO AUTORIZO Estou ciente que posso solicitar que algum dado seja acrescentado, alterado ou excluído pelo "ICEBERG KIDS" através do e-mail oficial.`;
+    } else {
+        voiceBody = `Voz e Imagem: Autorizo a utilização de minha voz e imagem, para divulgação das atividades do "ICEBERG KIDS", por meio físico ou digital, nas redes sociais e páginas oficiais ligadas ao clube e demais meios de comunicação, de forma gratuita, servindo este documento como Instrumento de Cessão. ( ) AUTORIZO ( ) NÃO AUTORIZO Estou ciente que posso solicitar que algum dado seja acrescentado, alterado ou excluído pelo "ICEBERG KIDS" através do e-mail oficial.`;
+    }
+
     const voiceLines = doc.splitTextToSize(voiceBody, 180);
     doc.text(voiceLines, 15, cursorY);
     cursorY += voiceLines.length * 5 + 8;
 
-    const footerLines = [`DATA: ${dateText}, SÃO JOSÉ DOS PINHAIS - PR`, '________________________________________________', 'ASSINATURA'];
+    const footerLines = [`DATA: ${dateText}, SÃO JOSÉ DOS PINHAIS - PR`, '________________________________________________', isAdulto ? 'ASSINATURA DO MEMBRO' : 'ASSINATURA DO RESPONSÁVEL'];
     footerLines.forEach(line => {
         doc.text(line, 15, cursorY);
         cursorY += 8;
@@ -1515,8 +1700,9 @@ function renderUsuarios() {
     
     appData.usuarios.forEach(u => {
         let fotoHtml = '';
-        if (u.Foto) {
-            fotoHtml = `<img src="${u.Foto}" class="w-8 h-8 rounded-full object-cover border border-outline-variant">`;
+        const userFoto = normalizeImageUrl(u.Foto || u.FotoBase64 || u.foto || u.fotoBase64);
+        if (userFoto) {
+            fotoHtml = `<img src="${userFoto}" class="w-8 h-8 rounded-full object-cover border border-outline-variant">`;
         } else {
             const initials = u.Nome ? u.Nome.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() : '?';
             fotoHtml = `<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-xs">${initials}</div>`;
@@ -2261,3 +2447,217 @@ function printFinanceiroRelatorioPDF() {
 
     doc.save(`Extrato_Financeiro_${now.replace(/\//g,'_')}.pdf`);
 }
+
+// ================= MENSAGENS E DISPAROS EM LOTE =================
+
+function renderMensagens() {
+    const tbody = document.getElementById('tbody-mensagens');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    if (!appData.mensagens || appData.mensagens.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center font-bold py-4">Nenhum modelo de e-mail cadastrado.</td></tr>';
+        return;
+    }
+    
+    appData.mensagens.forEach(msg => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="font-semibold">${msg.ID || msg.id || ''}</td>
+            <td>${msg.Assunto || msg.assunto || ''}</td>
+            <td class="flex gap-2">
+                <button class="btn btn-sm btn-edit" onclick="openEditMensagem('${msg.ID}', '${(msg.Assunto || '').replace(/'/g, "\\'")}', \`${(msg.Corpo || '').replace(/`/g, "\\`").replace(/\$/g, "\\$")}\`, ${msg._row})">Editar</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteMensagem(${msg._row})">Excluir</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function openCreateMensagem() {
+    const msgMode = document.getElementById('msg-mode');
+    msgMode.value = 'create';
+    msgMode.dataset.row = '';
+    msgMode.dataset.oldId = '';
+    const idInput = document.getElementById('msg-id');
+    idInput.value = '';
+    idInput.disabled = false;
+    document.getElementById('msg-assunto').value = '';
+    document.getElementById('msg-corpo').value = '';
+    document.getElementById('modal-mensagem-title').textContent = 'Novo Modelo de Mensagem';
+    openModal('modal-mensagem');
+}
+
+function openEditMensagem(id, assunto, corpo, row) {
+    const msgMode = document.getElementById('msg-mode');
+    msgMode.value = 'edit';
+    msgMode.dataset.row = row;
+    msgMode.dataset.oldId = id;
+    const idInput = document.getElementById('msg-id');
+    idInput.value = id;
+    idInput.disabled = false; // Permite alterar o Gatilho/ID
+    document.getElementById('msg-assunto').value = assunto;
+    document.getElementById('msg-corpo').value = corpo;
+    document.getElementById('modal-mensagem-title').textContent = 'Editar Modelo de Mensagem';
+    openModal('modal-mensagem');
+}
+
+async function deleteMensagem(rowNum) {
+    if (isPastor()) {
+        openModal('modal-acesso-negado');
+        return;
+    }
+    if (!confirm('Tem certeza que deseja excluir este modelo de mensagem?')) return;
+    showLoader(true);
+    try {
+        await fetchPOST({
+            action: 'deleteRow',
+            sheetName: 'Mensagens',
+            row: rowNum
+        });
+        setTimeout(loadAllData, 1000);
+    } catch (e) {
+        console.error(e);
+        alert('Erro ao excluir mensagem.');
+    }
+    showLoader(false);
+}
+
+function insertTag(id, tag) {
+    const el = document.getElementById(id);
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const text = el.value;
+    el.value = text.substring(0, start) + tag + text.substring(end);
+    el.focus();
+    el.selectionStart = el.selectionEnd = start + tag.length;
+}
+
+function openBulkEmailModal() {
+    const select = document.getElementById('bulk-email-template');
+    select.innerHTML = '';
+    
+    if (!appData.mensagens || appData.mensagens.length === 0) {
+        alert('Crie pelo menos um modelo de mensagem antes de enviar.');
+        return;
+    }
+    
+    appData.mensagens.forEach(msg => {
+        const opt = document.createElement('option');
+        opt.value = msg.ID;
+        opt.textContent = `${msg.ID} - ${msg.Assunto}`;
+        select.appendChild(opt);
+    });
+    
+    const list = document.getElementById('bulk-contacts-list');
+    list.innerHTML = '';
+    
+    const activeInsc = appData.inscricoes.filter(i => String(i.Status || '').trim() !== 'Cancelada');
+    if (activeInsc.length === 0) {
+        list.innerHTML = '<p class="text-xs text-outline">Nenhum inscrito ativo disponível.</p>';
+    } else {
+        activeInsc.forEach(i => {
+            const name = i['Nome Criança'] || i['Nome Completo'] || i['childName'] || 'Adulto sem Nome';
+            const email = i['Email Responsável'] || i['Email Mãe'] || i['Email Pai'] || i['Email'] || '';
+            const tipo = i['TipoInscricao'] || i['Cargo'] || 'Aventureiro';
+            
+            if (email) {
+                const item = document.createElement('label');
+                item.className = 'flex items-center gap-2 text-sm text-on-surface hover:bg-surface-container-low p-1.5 rounded cursor-pointer';
+                item.innerHTML = `
+                    <input type="checkbox" class="bulk-contact-cb rounded text-primary" value="${i._row}" checked>
+                    <span><strong>${name}</strong> (${tipo}) - <span class="text-outline text-xs">${email}</span></span>
+                `;
+                list.appendChild(item);
+            }
+        });
+    }
+    
+    openModal('modal-bulk-email');
+}
+
+function toggleSelectAllBulk(select) {
+    const checkboxes = document.querySelectorAll('.bulk-contact-cb');
+    checkboxes.forEach(cb => cb.checked = select);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Submit Modelos de Mensagem
+    const formMsg = document.getElementById('form-mensagem');
+    if (formMsg) {
+        formMsg.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoader(true);
+            const id = document.getElementById('msg-id').value;
+            const assunto = document.getElementById('msg-assunto').value;
+            const corpo = document.getElementById('msg-corpo').value;
+            const msgMode = document.getElementById('msg-mode');
+            const rowVal = msgMode.dataset.row;
+            const oldId = msgMode.dataset.oldId;
+            
+            try {
+                await fetchPOST({
+                    action: 'saveMensagem',
+                    row: rowVal ? parseInt(rowVal, 10) : null,
+                    oldId: oldId || null,
+                    id,
+                    assunto,
+                    corpo
+                });
+                closeModal('modal-mensagem');
+                formMsg.reset();
+                setTimeout(loadAllData, 1000);
+            } catch (err) {
+                console.error(err);
+                alert('Erro ao salvar modelo de mensagem.');
+            }
+            showLoader(false);
+        });
+    }
+
+    // Submit Envio em Lote
+    const formBulk = document.getElementById('form-bulk-email');
+    if (formBulk) {
+        formBulk.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const templateId = document.getElementById('bulk-email-template').value;
+            const template = appData.mensagens.find(m => m.ID === templateId);
+            if (!template) {
+                alert('Modelo de mensagem não encontrado.');
+                return;
+            }
+            
+            const selectedCbs = document.querySelectorAll('.bulk-contact-cb:checked');
+            if (selectedCbs.length === 0) {
+                alert('Selecione pelo menos um contato para envio.');
+                return;
+            }
+            
+            const rows = Array.from(selectedCbs).map(cb => parseInt(cb.value, 10));
+            
+            if (!confirm(`Deseja enviar este e-mail para ${rows.length} contatos selecionados?`)) return;
+            
+            showLoader(true);
+            try {
+                const res = await fetchPOST({
+                    action: 'sendBroadcastEmail',
+                    assunto: template.Assunto,
+                    corpo: template.Corpo,
+                    rows: rows
+                });
+                
+                if (res && res.success) {
+                    alert(`Disparo concluído! ${res.enviados} e-mails enviados com sucesso.`);
+                    closeModal('modal-bulk-email');
+                } else {
+                    alert('Erro no envio de e-mails.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Erro ao disparar e-mails.');
+            }
+            showLoader(false);
+        });
+    }
+});

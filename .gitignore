@@ -1,6 +1,3 @@
-# Ignorar arquivos de configuração local e dados sensíveis
-config.js
-
 # Ignorar dependências/artefatos locais se você usar algum gerador ou build
 node_modules/
 .DS_Store

@@ -1,4 +1,4 @@
-<!-- <!DOCTYPE html> -->
+﻿<!-- <!DOCTYPE html> -->
 <html class="light" lang="pt-BR">
 <head>
     <meta charset="utf-8"/>
@@ -108,7 +108,7 @@
         
         <div class="overflow-y-auto text-left space-y-6 pr-2 custom-scrollbar mb-6 flex-1">
             <div class="bg-surface-container-low p-4 rounded-xl border border-primary-fixed">
-                <p class="text-sm text-on-surface-variant mb-2">Para nos ajudar a custear parte das muitas despesas que o clube tem para funcionar (materiais, distintivos, atividades), a inscrição tem um custo simbólico de apenas <strong>R$ 15,00 por criança</strong>, e os membros têm uma pequena mensalidade de <strong>R$ 10,00 mensais</strong>.</p>
+                <p class="text-sm text-on-surface-variant mb-2">Para nos ajudar a custear parte das muitas despesas que o clube tem para funcionar (materiais, distintivos, atividades), a inscrição tem um custo simbólico de apenas <strong>R$ 10,00 por criança</strong>, e os membros têm uma pequena mensalidade de <strong>R$ 5,00 mensais</strong>.</p>
             </div>
 
             <div class="bg-surface-container p-4 rounded-xl border border-outline-variant">
@@ -120,23 +120,23 @@
                 <div id="tutorial-7me" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="bg-white p-2 rounded-lg shadow-sm text-center">
                         <img src="1.jpeg" alt="Passo 1 7me" class="w-full h-auto rounded mb-2 border border-outline-variant/30">
-                        <span class="text-xs font-bold">1. Selecione a igreja</span>
+                        <span class="text-xs font-bold">1. Baixe o 7me</span>
                     </div>
                     <div class="bg-white p-2 rounded-lg shadow-sm text-center">
                         <img src="2.jpeg" alt="Passo 2 7me" class="w-full h-auto rounded mb-2 border border-outline-variant/30">
-                        <span class="text-xs font-bold">2. Escolha ofertar para a minha igreja</span>
+                        <span class="text-xs font-bold">2. Acesse Inscrições</span>
                     </div>
                     <div class="bg-white p-2 rounded-lg shadow-sm text-center">
                         <img src="3.jpeg" alt="Passo 3 7me" class="w-full h-auto rounded mb-2 border border-outline-variant/30">
-                        <span class="text-xs font-bold">3. Selecione clube de aventureiros</span>
+                        <span class="text-xs font-bold">3. Selecione o Clube</span>
                     </div>
                     <div class="bg-white p-2 rounded-lg shadow-sm text-center">
                         <img src="4.jpeg" alt="Passo 4 7me" class="w-full h-auto rounded mb-2 border border-outline-variant/30">
-                        <span class="text-xs font-bold">4. Digite o valor</span>
+                        <span class="text-xs font-bold">4. Escolha a Criança</span>
                     </div>
                     <div class="bg-white p-2 rounded-lg shadow-sm text-center sm:col-span-2">
                         <img src="5.jpeg" alt="Passo 5 7me" class="w-full h-auto rounded mb-2 border border-outline-variant/30 max-w-xs mx-auto">
-                        <span class="text-xs font-bold">5. Confirmar e escolher a forma de pagamento</span>
+                        <span class="text-xs font-bold">5. Efetue o Pagamento</span>
                     </div>
                 </div>
 
@@ -194,20 +194,10 @@
             <p class="text-outline mt-2" id="subtitulo-etapa">Preencha as informações básicas da criança e dos responsáveis.</p>
         </div>
 
-        <form id="formInscricao" class="space-y-8 glass-card rounded-3xl p-6 md:p-10" novalidate>
+        <form id="formInscricao" class="space-y-8 glass-card rounded-3xl p-6 md:p-10">
             
-                        <!-- ETAPA 1: Dados Pessoais -->
+            <!-- ETAPA 1: Dados Pessoais -->
             <div id="etapa-1" class="space-y-8">
-                
-                <!-- TIPO DE CADASTRO -->
-                <div class="bento-box bg-secondary-container/30 border-secondary">
-                    <label class="input-label font-bold text-secondary text-lg">Quem você está cadastrando?</label>
-                    <select id="tipo-cadastro" name="tipoCadastro" class="input-field mt-2 font-bold bg-white" onchange="alterarTipoCadastro()">
-                        <option value="Aventureiro(a)">Um Aventureiro (Criança)</option>
-                        <option value="Pais">Pai / Mãe</option>
-                        <option value="Membro da Diretoria">Membro da Diretoria</option>
-                    </select>
-                </div>
                 <div class="bento-box">
                     <h2 class="text-2xl font-headline-md text-primary mb-6 flex items-center gap-2">
                         <span class="material-symbols-outlined">child_care</span> O Aventureiro
@@ -219,16 +209,20 @@
                         </div>
                         <div>
                             <label class="input-label">Data de Nascimento *</label>
-                            <input type="date" id="data-nasc" required class="input-field" onchange="calcularIdadeEClasse()">
+                            <input type="date" id="data-nasc" required class="input-field">
                         </div>
                         <div>
-                            <label class="input-label">Idade e Classe (calculado automaticamente)</label>
-                            <div id="info-idade-classe" class="input-field bg-surface-container-low text-on-surface-variant italic text-sm flex items-center gap-2">
-                                <span class="material-symbols-outlined text-base">info</span>
-                                Informe a data de nascimento acima
-                            </div>
-                            <input type="hidden" id="idade" value="">
-                            <input type="hidden" id="classe" value="">
+                            <label class="input-label">Idade Atual *</label>
+                            <select id="idade" required class="input-field">
+                                <option value="">Selecione...</option>
+                                <option value="3">3 anos (baby)</option>
+                                <option value="4">4 anos (baby)</option>
+                                <option value="5">5 anos (baby)</option>
+                                <option value="6">6 anos (Abelhinhas Laboriosas)</option>
+                                <option value="7">7 anos (Luminares)</option>
+                                <option value="8">8 anos (Edificadores)</option>
+                                <option value="9">9 anos (Mãos Ajudadoras)</option>
+                            </select>
                         </div>
                         <div>
                             <label class="input-label">Gênero *</label>
@@ -237,36 +231,6 @@
                                 <option value="Masculino">Masculino</option>
                                 <option value="Feminino">Feminino</option>
                             </select>
-                        </div>
-                        <div>
-                            <label id="label-cpf-cadastro" class="input-label">CPF da Criança *</label>
-                            <input type="text" id="cpf-cadastro" required class="input-field" placeholder="000.000.000-00">
-                        </div>
-                        <div id="dados-adulto-extras" class="grid grid-cols-1 md:grid-cols-2 gap-6 hidden md:col-span-2">
-                            <div>
-                                <label class="input-label">E-mail *</label>
-                                <input type="email" id="adulto-email" class="input-field" placeholder="seuemail@exemplo.com">
-                            </div>
-                            <div>
-                                <label class="input-label">Telefone / WhatsApp *</label>
-                                <input type="tel" id="adulto-telefone" class="input-field" placeholder="(41) 99999-9999">
-                            </div>
-                            <div>
-                                <label class="input-label">Sua Profissão *</label>
-                                <input type="text" id="adulto-profissao" class="input-field" placeholder="Ex: Professor, Autônomo">
-                            </div>
-                            <div>
-                                <label class="input-label">Sua Escolaridade *</label>
-                                <select id="adulto-escolaridade" class="input-field">
-                                    <option value="">Selecione...</option>
-                                    <option value="Sem Escolaridade">Sem Escolaridade</option>
-                                    <option value="Ensino Fundamental">Ensino Fundamental</option>
-                                    <option value="Ensino Médio">Ensino Médio</option>
-                                    <option value="Ensino Superior Incompleto">Ensino Superior Incompleto</option>
-                                    <option value="Ensino Superior Completo">Ensino Superior Completo</option>
-                                    <option value="Pós Graduação/Mestrado/Doutorado">Pós Graduação/Mestrado/Doutorado</option>
-                                </select>
-                            </div>
                         </div>
                         <div>
                             <label class="input-label">A criança já foi do clube antes?</label>
@@ -345,103 +309,69 @@
                 </div> <!-- FECHA O GRID -->
             </div> <!-- FECHA O PRIMEIRO BENTO-BOX -->
 
-                <div id="secao-pais" class="bento-box border-l-4 border-l-primary">
-                    <div id="dados-pais-detalhe">
-                        <h2 class="text-2xl font-headline-md text-primary mb-6 flex items-center gap-2">
-                            <span class="material-symbols-outlined">family_restroom</span> Os Pais / Responsáveis
-                        </h2>
-                        
-                        <h3 class="font-bold text-lg mb-4 text-secondary">Dados da Mãe</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                            <div>
-                                <label class="input-label">Nome Completo da Mãe *</label>
-                                <input type="text" id="nome-mae" required class="input-field">
-                            </div>
-                            <div class="pais-detalhes-adicionais grid grid-cols-1 md:grid-cols-2 gap-6 md:col-span-2">
-                                <div>
-                                    <label class="input-label">CPF da Mãe *</label>
-                                    <input type="text" id="cpf-mae" required class="input-field" placeholder="000.000.000-00">
-                                </div>
-                                <div>
-                                    <label class="input-label">Profissão da Mãe *</label>
-                                    <input type="text" id="prof-mae" required class="input-field">
-                                </div>
-                                <div>
-                                    <label class="input-label">Telefone / WhatsApp da Mãe *</label>
-                                    <input type="tel" id="telefone-mae" required class="input-field" placeholder="(41) 99999-9999">
-                                </div>
-                                <div>
-                                    <label class="input-label">E-mail da Mãe *</label>
-                                    <input type="email" id="email-mae" required class="input-field" placeholder="mae@exemplo.com">
-                                </div>
-                                <div>
-                                    <label class="input-label">Trabalha na área da saúde?</label>
-                                    <select id="saude-mae" class="input-field">
-                                        <option value="Não">Não</option>
-                                        <option value="Sim">Sim</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="input-label">Escolaridade da Mãe</label>
-                                    <select id="escolaridade-mae" class="input-field">
-                                        <option value="Sem Escolaridade">Sem Escolaridade</option>
-                                        <option value="Ensino Fundamental">Ensino Fundamental</option>
-                                        <option value="Ensino Médio">Ensino Médio</option>
-                                        <option value="Ensino Superior Incompleto">Ensino Superior Incompleto</option>
-                                        <option value="Ensino Superior Completo">Ensino Superior Completo</option>
-                                        <option value="Pós Graduação/Mestrado/Doutorado">Pós Graduação/Mestrado/Doutorado</option>
-                                    </select>
-                                </div>
-                            </div>
+                <div class="bento-box border-l-4 border-l-primary">
+                    <h2 class="text-2xl font-headline-md text-primary mb-6 flex items-center gap-2">
+                        <span class="material-symbols-outlined">family_restroom</span> Os Pais / Responsáveis
+                    </h2>
+                    
+                    <h3 class="font-bold text-lg mb-4 text-secondary">Dados da Mãe</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div>
+                            <label class="input-label">Nome Completo *</label>
+                            <input type="text" id="nome-mae" required class="input-field">
                         </div>
+                        <div>
+                            <label class="input-label">Profissão da Mãe *</label>
+                            <input type="text" id="prof-mae" required class="input-field">
+                        </div>
+                        <div>
+                            <label class="input-label">Trabalha na área da saúde?</label>
+                            <select id="saude-mae" class="input-field">
+                                <option value="Não">Não</option>
+                                <option value="Sim">Sim</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="input-label">Escolaridade da Mãe</label>
+                            <select id="escolaridade-mae" class="input-field">
+                                <option value="Ensino Médio">Ensino Médio</option>
+                                <option value="Ensino Superior Incompleto">Ensino Superior Incompleto</option>
+                                <option value="Ensino Superior Completo">Ensino Superior Completo</option>
+                                <option value="Pós Graduação/Mestrado/Doutorado">Pós Graduação/Mestrado/Doutorado</option>
+                            </select>
+                        </div>
+                    </div>
 
-                        <h3 class="font-bold text-lg mb-4 text-secondary">Dados do Pai</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                            <div>
-                                <label class="input-label">Nome Completo do Pai *</label>
-                                <input type="text" id="nome-pai" required class="input-field">
-                            </div>
-                            <div class="pais-detalhes-adicionais grid grid-cols-1 md:grid-cols-2 gap-6 md:col-span-2">
-                                <div>
-                                    <label class="input-label">CPF do Pai *</label>
-                                    <input type="text" id="cpf-pai" required class="input-field" placeholder="000.000.000-00">
-                                </div>
-                                <div>
-                                    <label class="input-label">Profissão do Pai *</label>
-                                    <input type="text" id="prof-pai" required class="input-field">
-                                </div>
-                                <div>
-                                    <label class="input-label">Telefone / WhatsApp do Pai</label>
-                                    <input type="tel" id="telefone-pai" class="input-field" placeholder="(41) 99999-9999">
-                                </div>
-                                <div>
-                                    <label class="input-label">E-mail do Pai</label>
-                                    <input type="email" id="email-pai" class="input-field" placeholder="pai@exemplo.com">
-                                </div>
-                                <div>
-                                    <label class="input-label">Trabalha na área da saúde?</label>
-                                    <select id="saude-pai" class="input-field">
-                                        <option value="Não">Não</option>
-                                        <option value="Sim">Sim</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="input-label">Escolaridade do Pai</label>
-                                    <select id="escolaridade-pai" class="input-field">
-                                        <option value="Sem Escolaridade">Sem Escolaridade</option>
-                                        <option value="Ensino Fundamental">Ensino Fundamental</option>
-                                        <option value="Ensino Médio">Ensino Médio</option>
-                                        <option value="Ensino Superior Incompleto">Ensino Superior Incompleto</option>
-                                        <option value="Ensino Superior Completo">Ensino Superior Completo</option>
-                                        <option value="Pós Graduação/Mestrado/Doutorado">Pós Graduação/Mestrado/Doutorado</option>
-                                    </select>
-                                </div>
-                            </div>
+                    <h3 class="font-bold text-lg mb-4 text-secondary">Dados do Pai</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div>
+                            <label class="input-label">Nome Completo *</label>
+                            <input type="text" id="nome-pai" required class="input-field">
+                        </div>
+                        <div>
+                            <label class="input-label">Profissão do Pai *</label>
+                            <input type="text" id="prof-pai" required class="input-field">
+                        </div>
+                        <div>
+                            <label class="input-label">Trabalha na área da saúde?</label>
+                            <select id="saude-pai" class="input-field">
+                                <option value="Não">Não</option>
+                                <option value="Sim">Sim</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="input-label">Escolaridade do Pai</label>
+                            <select id="escolaridade-pai" class="input-field">
+                                <option value="Ensino Médio">Ensino Médio</option>
+                                <option value="Ensino Superior Incompleto">Ensino Superior Incompleto</option>
+                                <option value="Ensino Superior Completo">Ensino Superior Completo</option>
+                                <option value="Pós Graduação/Mestrado/Doutorado">Pós Graduação/Mestrado/Doutorado</option>
+                            </select>
                         </div>
                     </div>
 
                     <h3 class="font-bold text-lg mb-4 text-secondary">Contato Principal</h3>
-                    <div id="contato-principal-detalhes" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
                             <label class="input-label">Telefone / WhatsApp Principal *</label>
                             <input type="tel" id="telefone-contato" required class="input-field" placeholder="(41) 99999-9999">
@@ -462,22 +392,10 @@
                                 <option value="Outro">Outro (Tio, Avó, etc)</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="input-label">Preferência de Recebimento de E-mails *</label>
-                            <select id="receber-email-em" required class="input-field">
-                                <option value="Responsável Legal">E-mail do Responsável Legal</option>
-                                <option value="Mãe">E-mail da Mãe</option>
-                                <option value="Pai">E-mail do Pai</option>
-                            </select>
-                        </div>
                         <div id="div-nome-outro-responsavel" class="hidden col-span-1 md:col-span-2">
                             <label class="input-label">Nome Completo do Resp. Legal (Assinante) *</label>
                             <input type="text" id="nome-outro-responsavel" class="input-field" placeholder="Ex: Maria Antonieta (Avó)">
                         </div>
-                    </div>
-
-                    <!-- Contatos de Emergência (Sempre Visíveis) -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
                             <label class="input-label">Telefone de Emergência (Outro Parente) *</label>
                             <input type="tel" id="telefone-emergencia" required class="input-field" placeholder="(41) 98888-8888">
@@ -485,43 +403,6 @@
                         <div class="col-span-1 md:col-span-2">
                             <label class="input-label">Nome do Contato de Emergência *</label>
                             <input type="text" id="nome-emergencia" required class="input-field">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Endereço Residencial -->
-                <div class="bento-box">
-                    <h2 class="text-2xl font-headline-md text-primary mb-6 flex items-center gap-2">
-                        <span class="material-symbols-outlined">home</span> Endereço Residencial
-                    </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="input-label">CEP *</label>
-                            <input type="text" id="cep" required class="input-field" placeholder="00000-000" maxlength="9" oninput="buscarCEP(this.value)">
-                        </div>
-                        <div>
-                            <label class="input-label">Rua / Logradouro *</label>
-                            <input type="text" id="rua" required class="input-field" placeholder="Rua das Flores">
-                        </div>
-                        <div>
-                            <label class="input-label">Número *</label>
-                            <input type="text" id="numero-end" required class="input-field" placeholder="123">
-                        </div>
-                        <div>
-                            <label class="input-label">Complemento</label>
-                            <input type="text" id="complemento" class="input-field" placeholder="Apto, Bloco...">
-                        </div>
-                        <div>
-                            <label class="input-label">Bairro *</label>
-                            <input type="text" id="bairro" required class="input-field">
-                        </div>
-                        <div>
-                            <label class="input-label">Cidade *</label>
-                            <input type="text" id="cidade" required class="input-field">
-                        </div>
-                        <div>
-                            <label class="input-label">Estado *</label>
-                            <input type="text" id="estado" required class="input-field" maxlength="2" placeholder="PR">
                         </div>
                     </div>
                 </div>
@@ -665,28 +546,6 @@
 
             <!-- ETAPA 3: Autorizações -->
             <div id="etapa-3" class="step-hidden space-y-8">
-
-                <!-- Foto do Aventureiro -->
-                <div class="bento-box">
-                    <h2 class="text-2xl font-headline-md text-primary mb-4 flex items-center gap-2">
-                        <span class="material-symbols-outlined">add_a_photo</span> Foto do Aventureiro
-                    </h2>
-                    <p class="text-sm text-outline mb-4">Adicione uma foto recente do aventureiro para identificação na ficha de inscrição.</p>
-                    <div class="flex flex-col md:flex-row items-center gap-6">
-                        <div id="foto-preview-container" class="w-32 h-32 rounded-full bg-surface-container flex items-center justify-center overflow-hidden border-4 border-outline-variant flex-shrink-0 cursor-pointer" onclick="document.getElementById('foto-input').click()">
-                            <img id="foto-preview" src="" alt="" class="hidden w-full h-full object-cover rounded-full">
-                            <span id="foto-placeholder" class="material-symbols-outlined text-5xl text-outline">person</span>
-                        </div>
-                        <div class="flex-1 text-center md:text-left">
-                            <input type="file" id="foto-input" accept="image/*" class="hidden" onchange="previewFoto(event)">
-                            <button type="button" onclick="document.getElementById('foto-input').click()" class="bg-primary text-on-primary px-6 py-3 rounded-full font-bold bouncy-button flex items-center gap-2 mx-auto md:mx-0">
-                                <span class="material-symbols-outlined">upload</span> Escolher Foto
-                            </button>
-                            <p class="text-xs text-outline mt-2">Formatos aceitos: JPG, PNG. Máx. 5MB.</p>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="bento-box border-l-4 border-l-primary">
                     <h2 class="text-2xl font-headline-md text-primary mb-6 flex items-center gap-2">
                         <span class="material-symbols-outlined">assignment</span> Autorizações e Termo
@@ -743,7 +602,7 @@
             <span class="material-symbols-outlined text-5xl">check_circle</span>
         </div>
         <h3 class="text-2xl font-headline-md font-bold text-primary mb-3">Inscrição Enviada!</h3>
-        <p id="sucesso-mensagem" class="text-outline mb-8 text-sm leading-relaxed">
+        <p class="text-outline mb-8 text-sm leading-relaxed">
             Os dados do aventureiro foram salvos com sucesso na nossa planilha. A diretoria do clube fará a avaliação em breve!
         </p>
         <div class="flex flex-col gap-3">
@@ -765,152 +624,5 @@
 
 <script src="config.js"></script>
 <script src="script.js?v=1.1"></script>
-<script>
-function alterarTipoCadastro() {
-    const tipo = document.getElementById('tipo-cadastro').value;
-    const labelNome = document.querySelector('label[for="nome-crianca"]') || document.querySelector('#nome-crianca').previousElementSibling;
-    const divVeterano = document.getElementById('veterano').parentElement;
-    const divBatizado = document.getElementById('batizado').parentElement;
-    const labelRG = document.querySelector('label[for="rg-crianca"]') || document.querySelector('#rg-crianca').previousElementSibling;
-    const headerAventureiro = document.querySelector('#etapa-1 h2.text-2xl');
-
-    // CPF na Etapa 1
-    const labelCPFCadastro = document.getElementById('label-cpf-cadastro');
-    const inputCPFCadastro = document.getElementById('cpf-cadastro');
-
-    // Elementos adicionais para Adulto (E-mail na Etapa 1)
-    const divAdultoExtras = document.getElementById('dados-adulto-extras');
-    const inputAdultoEmail = document.getElementById('adulto-email');
-
-    // Contato Principal
-    const divContatoDetalhes = document.getElementById('contato-principal-detalhes');
-    const inputTelContato = document.getElementById('telefone-contato');
-    const inputEmailResp = document.getElementById('email-responsavel');
-    const inputCpfResp = document.getElementById('cpf-responsavel');
-    const inputVinculoResp = document.getElementById('vinculo-responsavel');
-    const inputReceberEmail = document.getElementById('receber-email-em');
-
-    // Pais details
-    const inputDataNasc = document.getElementById('data-nasc');
-    const inputNomeMae = document.getElementById('nome-mae');
-    const inputNomePai = document.getElementById('nome-pai');
-    const inputGenero = document.getElementById('genero');
-
-    // Outros campos de pais (adicionais) que vamos ocultar para adultos
-    const inputProfMae = document.getElementById('prof-mae');
-    const inputTelefoneMae = document.getElementById('telefone-mae');
-    const inputEmailMae = document.getElementById('email-mae');
-    const inputCpfMae = document.getElementById('cpf-mae');
-    const inputProfPai = document.getElementById('prof-pai');
-    const inputCpfPai = document.getElementById('cpf-pai');
-    const adicionaisEl = document.querySelectorAll('.pais-detalhes-adicionais');
-
-    if (tipo !== 'Aventureiro(a)') {
-        if(labelNome) labelNome.innerText = 'Seu Nome Completo *';
-        if(labelCPFCadastro) labelCPFCadastro.innerText = 'CPF *';
-        if(divVeterano) divVeterano.style.display = 'none';
-        if(divBatizado) divBatizado.style.display = 'none';
-        if(labelRG) labelRG.innerText = 'RG (Opcional)';
-        if(headerAventureiro) headerAventureiro.innerHTML = '<span class="material-symbols-outlined">person</span> Seus Dados';
-
-        // Mostrar extras de Adulto (e-mail, telefone, profissão e escolaridade) e torná-los obrigatórios
-        if (divAdultoExtras) divAdultoExtras.classList.remove('hidden');
-        if (inputAdultoEmail) inputAdultoEmail.required = true;
-        const inputAdultoTelefone = document.getElementById('adulto-telefone');
-        const inputAdultoProf = document.getElementById('adulto-profissao');
-        const inputAdultoEsc = document.getElementById('adulto-escolaridade');
-        if (inputAdultoTelefone) inputAdultoTelefone.required = true;
-        if (inputAdultoProf) inputAdultoProf.required = true;
-        if (inputAdultoEsc) inputAdultoEsc.required = true;
-
-        // Ocultar contato principal (exceto contatos de emergência) e torná-los não obrigatórios
-        if (divContatoDetalhes) divContatoDetalhes.classList.add('hidden');
-        if (inputTelContato) { inputTelContato.required = false; inputTelContato.value = ''; }
-        if (inputEmailResp) { inputEmailResp.required = false; inputEmailResp.value = ''; }
-        if (inputCpfResp) { inputCpfResp.required = false; inputCpfResp.value = ''; }
-        if (inputVinculoResp) { inputVinculoResp.required = false; }
-        if (inputReceberEmail) { inputReceberEmail.required = false; }
-
-        // Nome do pai e da mãe continuam obrigatórios para todos
-        if (inputNomeMae) inputNomeMae.required = true;
-        if (inputNomePai) inputNomePai.required = true;
-
-        // Ocultar detalhes adicionais dos pais
-        adicionaisEl.forEach(el => el.classList.add('hidden'));
-        if (inputProfMae) { inputProfMae.required = false; inputProfMae.value = ''; }
-        if (inputTelefoneMae) { inputTelefoneMae.required = false; inputTelefoneMae.value = ''; }
-        if (inputEmailMae) { inputEmailMae.required = false; inputEmailMae.value = ''; }
-        if (inputCpfMae) { inputCpfMae.required = false; inputCpfMae.value = ''; }
-        if (inputProfPai) { inputProfPai.required = false; inputProfPai.value = ''; }
-        if (inputCpfPai) { inputCpfPai.required = false; inputCpfPai.value = ''; }
-
-        // Data de nascimento e Gênero deixam de ser obrigatórios
-        if (inputDataNasc) { inputDataNasc.required = false; inputDataNasc.value = ''; }
-        if (inputGenero) { inputGenero.required = false; }
-        
-        // Resetar os inputs hidden de idade/classe para adulto
-        const inputIdade = document.getElementById('idade');
-        const inputClasse = document.getElementById('classe');
-        if (inputIdade) inputIdade.value = 'Adulto';
-        if (inputClasse) inputClasse.value = 'Diretoria/Pais';
-        const infoDiv = document.getElementById('info-idade-classe');
-        if (infoDiv) {
-            infoDiv.innerHTML = '<span class="material-symbols-outlined text-base">info</span> Cadastro de Adulto';
-            infoDiv.classList.remove('italic');
-        }
-    } else {
-        if(labelNome) labelNome.innerText = 'Nome Completo da Criança *';
-        if(labelCPFCadastro) labelCPFCadastro.innerText = 'CPF da Criança *';
-        if(divVeterano) divVeterano.style.display = 'block';
-        if(divBatizado) divBatizado.style.display = 'block';
-        if(labelRG) labelRG.innerText = 'RG da Criança (Opcional)';
-        if(headerAventureiro) headerAventureiro.innerHTML = '<span class="material-symbols-outlined">child_care</span> O Aventureiro';
-
-        // Ocultar extras de Adulto e torná-los opcionais
-        if (divAdultoExtras) divAdultoExtras.classList.add('hidden');
-        if (inputAdultoEmail) { inputAdultoEmail.required = false; inputAdultoEmail.value = ''; }
-        const inputAdultoTelefone = document.getElementById('adulto-telefone');
-        const inputAdultoProf = document.getElementById('adulto-profissao');
-        const inputAdultoEsc = document.getElementById('adulto-escolaridade');
-        if (inputAdultoTelefone) { inputAdultoTelefone.required = false; inputAdultoTelefone.value = ''; }
-        if (inputAdultoProf) { inputAdultoProf.required = false; inputAdultoProf.value = ''; }
-        if (inputAdultoEsc) { inputAdultoEsc.required = false; inputAdultoEsc.value = ''; }
-
-        // Mostrar contato principal e torná-los obrigatórios
-        if (divContatoDetalhes) divContatoDetalhes.classList.remove('hidden');
-        if (inputTelContato) inputTelContato.required = true;
-        if (inputEmailResp) inputEmailResp.required = true;
-        if (inputCpfResp) inputCpfResp.required = true;
-        if (inputVinculoResp) inputVinculoResp.required = true;
-        if (inputReceberEmail) inputReceberEmail.required = true;
-
-        // Mostrar detalhes adicionais dos pais e redefinir obrigatoriedade
-        adicionaisEl.forEach(el => el.classList.remove('hidden'));
-        if (inputNomeMae) inputNomeMae.required = true;
-        if (inputProfMae) inputProfMae.required = true;
-        if (inputTelefoneMae) inputTelefoneMae.required = true;
-        if (inputEmailMae) inputEmailMae.required = true;
-        if (inputCpfMae) inputCpfMae.required = true;
-        if (inputNomePai) inputNomePai.required = true;
-        if (inputProfPai) inputProfPai.required = true;
-        if (inputCpfPai) inputCpfPai.required = true;
-
-        // Restaurar obrigatoriedade para Aventureiro
-        if (inputDataNasc) inputDataNasc.required = true;
-        if (inputGenero) inputGenero.required = true;
-        
-        // Limpar hidden
-        const inputIdade = document.getElementById('idade');
-        const inputClasse = document.getElementById('classe');
-        if (inputIdade) inputIdade.value = '';
-        if (inputClasse) inputClasse.value = '';
-        const infoDiv = document.getElementById('info-idade-classe');
-        if (infoDiv) {
-            infoDiv.innerHTML = '<span class="material-symbols-outlined text-base">info</span> Informe a data de nascimento acima';
-            infoDiv.classList.add('italic');
-        }
-    }
-}
-</script>
 </body>
 </html>
