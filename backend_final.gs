@@ -162,7 +162,7 @@ function doPost(e) {
     }
     if (action === 'updateAtividade') {
       const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Atividades');
-      sheet.getRange(payload.row, 1, 1, 3).setValues([[payload.dataReuniao, payload.atividade, payload.observacoes]]);
+      sheet.getRange(payload.row, 1, 1, 4).setValues([[payload.dataReuniao, payload.atividade, payload.observacoes, payload.imagens || ""]]);
       return jsonResponse({ success: true });
     }
     if (action === 'updateApontamento') {
@@ -185,7 +185,7 @@ function doPost(e) {
 
     // ADDS
     if (action === 'addApoiador') return jsonResponse(handleSaveApoiador(payload));
-    if (action === 'addAtividade') return jsonResponse(appendData('Atividades', [payload.dataReuniao, payload.atividade, payload.observacoes]));
+    if (action === 'addAtividade') return jsonResponse(appendData('Atividades', [payload.dataReuniao, payload.atividade, payload.observacoes, payload.imagens || ""]));
     if (action === 'addApontamento') return jsonResponse(appendData('Apontamentos', [payload.data, payload.nome, payload.pontualidade, payload.material, payload.uniforme, payload.lenco, payload.participativo, payload.obs]));
     if (action === 'addCalendario') return jsonResponse(appendData('Calendario', [payload.dataEvento, payload.evento, payload.categoria, payload.detalhes]));
     if (action === 'addFinanceiro') return jsonResponse(handleSaveFinanceiro(payload));
@@ -333,6 +333,13 @@ function getSheetData(sheetName) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(sheetName);
   if (!sheet) return [];
+  
+  if (sheetName === 'Atividades') {
+    const lastCol = sheet.getLastColumn();
+    if (lastCol < 4 || !sheet.getRange(1, 4).getValue()) {
+      sheet.getRange(1, 4).setValue('Imagens');
+    }
+  }
   
   const rows = sheet.getDataRange().getValues();
   if (rows.length <= 1) return [];

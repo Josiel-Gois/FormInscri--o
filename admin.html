@@ -882,6 +882,7 @@
                                     <th class="px-6 py-4 font-label-bold text-on-surface-variant">Data da Reunião</th>
                                     <th class="px-6 py-4 font-label-bold text-on-surface-variant">Atividade Realizada</th>
                                     <th class="px-6 py-4 font-label-bold text-on-surface-variant">Observações</th>
+                                    <th class="px-6 py-4 font-label-bold text-on-surface-variant">Imagens</th>
                                     <th class="px-6 py-4 font-label-bold text-on-surface-variant text-right">Ações</th>
                                 </tr>
                             </thead>
@@ -910,6 +911,24 @@
                                 <span>Novo Evento</span>
                             </button>
                         </div>
+                    </div>
+
+                    <!-- Filtro e Pesquisa -->
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <div class="relative flex-1">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-outline-variant pointer-events-none">
+                                <span class="material-symbols-outlined text-[18px]">search</span>
+                            </span>
+                            <input type="text" id="search-calendario" placeholder="Pesquisar por evento ou detalhes..." class="w-full pl-10 pr-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl focus:outline-none focus:border-primary text-sm transition-colors">
+                        </div>
+                        <select id="filter-calendario-categoria" class="bg-surface-container-lowest border border-outline-variant rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-primary transition-colors min-w-[180px]">
+                            <option value="">Todas as Categorias</option>
+                            <option value="Reunião Regular">Reunião Regular</option>
+                            <option value="Passeios e Atividades">Passeios e Atividades</option>
+                            <option value="Prova do Clube">Prova do Clube</option>
+                            <option value="Eventos Especiais">Eventos Especiais</option>
+                            <option value="Folga">Folga</option>
+                        </select>
                     </div>
 
                     <div class="overflow-x-auto bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm no-scrollbar">
@@ -1320,6 +1339,11 @@
                     <label>Observações:</label>
                     <textarea id="atividade-obs" rows="3"></textarea>
                 </div>
+                <div class="input-group">
+                    <label>Imagens (máx. 4):</label>
+                    <input type="file" id="atividade-imagens" accept="image/*" multiple class="text-sm">
+                    <div id="atividade-preview-container" class="flex flex-wrap gap-2 mt-2"></div>
+                </div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-outline" onclick="closeModal('modal-atividade')">Cancelar</button>
                     <button type="submit" class="btn">Salvar Atividade</button>
@@ -1407,6 +1431,11 @@
                 <div class="input-group">
                     <label>Observações:</label>
                     <textarea id="edit-atividade-obs" rows="3"></textarea>
+                </div>
+                <div class="input-group">
+                    <label>Imagens (máx. 4):</label>
+                    <input type="file" id="edit-atividade-imagens" accept="image/*" multiple class="text-sm">
+                    <div id="edit-atividade-preview-container" class="flex flex-wrap gap-2 mt-2"></div>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-outline" onclick="closeModal('modal-editar-atividade')">Cancelar</button>
@@ -1999,5 +2028,12 @@
         // Initialize snow on DOM load
         window.addEventListener('DOMContentLoaded', createSnow);
     </script>
+    
+    <!-- Lightbox Modal para Zoom de Imagens -->
+    <div id="lightbox-modal" class="modal-overlay hidden" onclick="closeLightbox()" style="z-index: 9999; cursor: zoom-out; background: rgba(0,0,0,0.85);">
+        <div class="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center pointer-events-none">
+            <img id="lightbox-img" src="" class="max-w-full max-h-[90vh] rounded-2xl shadow-2xl object-contain border-4 border-white/20">
+        </div>
+    </div>
 </body>
 </html>

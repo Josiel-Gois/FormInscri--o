@@ -10,6 +10,43 @@ let appData = {
     calendario: []
 };
 
+let currentEditImagens = [];
+let currentNewImagens = [];
+
+async function compressImage(file, maxWidth = 200, maxHeight = 200, quality = 0.5) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width = Math.round((width * maxHeight) / height);
+                        height = maxHeight;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+        };
+    });
+}
+
 function getVal(obj, key) {
     if (!obj) return '';
     const cleanKey = String(key).trim().toLowerCase();
@@ -640,7 +677,7 @@ function renderInscricoes() {
         const foto = normalizeImageUrl(getVal(insc, 'FotoBase64') || getVal(insc, 'Foto') || insc.FotoBase64 || insc.fotoBase64 || '');
         let fotoHtml = '';
         if (foto) {
-            fotoHtml = `<img src="${foto}" class="w-10 h-10 rounded-full object-cover border border-outline-variant">`;
+            fotoHtml = `<img src="${foto}" class="w-10 h-10 rounded-full object-cover border border-outline-variant cursor-pointer hover:scale-110 transition-transform duration-100" onclick="openLightbox('${foto}')">`;
         } else {
             const initials = nome.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
             fotoHtml = `<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-xs">${initials}</div>`;
@@ -665,20 +702,77 @@ function renderInscricoes() {
 document.getElementById('filter-status').addEventListener('change', renderInscricoes);
 document.getElementById('search-inscricao').addEventListener('input', renderInscricoes);
 
+const filterCalEl = document.getElementById('filter-calendario-categoria');
+if (filterCalEl) filterCalEl.addEventListener('change', renderCalendario);
+
+const searchCalEl = document.getElementById('search-calendario');
+if (searchCalEl) searchCalEl.addEventListener('input', renderCalendario);
+
+// Ouvintes para imagens das atividades
+const newImgInput = document.getElementById('atividade-imagens');
+if (newImgInput) {
+    newImgInput.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files).slice(0, 4);
+        currentNewImagens = [];
+        const previewContainer = document.getElementById('atividade-preview-container');
+        if (previewContainer) previewContainer.innerHTML = '';
+        for (const file of files) {
+            const compressed = await compressImage(file, 200, 200, 0.5);
+            currentNewImagens.push(compressed);
+            if (previewContainer) {
+                const img = document.createElement('img');
+                img.src = compressed;
+                img.className = 'w-12 h-12 object-cover rounded border border-outline-variant';
+                previewContainer.appendChild(img);
+            }
+        }
+    });
+}
+
+const editImgInput = document.getElementById('edit-atividade-imagens');
+if (editImgInput) {
+    editImgInput.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files).slice(0, 4);
+        currentEditImagens = [];
+        const previewContainer = document.getElementById('edit-atividade-preview-container');
+        if (previewContainer) previewContainer.innerHTML = '';
+        for (const file of files) {
+            const compressed = await compressImage(file, 200, 200, 0.5);
+            currentEditImagens.push(compressed);
+            if (previewContainer) {
+                const img = document.createElement('img');
+                img.src = compressed;
+                img.className = 'w-12 h-12 object-cover rounded border border-outline-variant';
+                previewContainer.appendChild(img);
+            }
+        }
+    });
+}
+
 function renderAtividades() {
     const tbody = document.querySelector('#table-atividades tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
     appData.atividades.forEach(a => {
+        const imagensRaw = a['Imagens'] || a.Imagens || '';
         const actionsHtml = hasFullAccess() ? `
-            <button class="btn btn-sm btn-outline" onclick="openEditAtividade(${a._row}, '${a['Data da Reunião']}', '${a['Atividade Realizada']}', '${a['Observações']}')">Editar</button>
+            <button class="btn btn-sm btn-outline" onclick="openEditAtividade(${a._row}, '${a['Data da Reunião']}', '${a['Atividade Realizada']}', '${a['Observações']}', '${imagensRaw}')">Editar</button>
             <button class="btn btn-sm btn-danger" onclick="deleteRow('Atividades', ${a._row})">Excluir</button>
         ` : '---';
+
+        let imgsHtml = '';
+        if (imagensRaw) {
+            const list = String(imagensRaw).split('|').filter(x => x.startsWith('data:image'));
+            list.forEach(imgSrc => {
+                imgsHtml += `<img src="${imgSrc}" class="w-8 h-8 object-cover rounded border border-outline-variant cursor-pointer hover:scale-110 transition-transform duration-100" onclick="openLightbox('${imgSrc}')">`;
+            });
+        }
 
         tbody.innerHTML += `<tr>
             <td>${new Date(a['Data da Reunião']).toLocaleDateString('pt-BR')}</td>
             <td>${a['Atividade Realizada']}</td>
             <td>${a['Observações'] || ''}</td>
+            <td><div class="flex gap-1">${imgsHtml}</div></td>
             <td>${actionsHtml}</td>
         </tr>`;
     });
@@ -743,8 +837,7 @@ function renderApoiadores() {
 }
 
 function renderCalendario() {
-    const user = JSON.parse(localStorage.getItem('icebergUser'));
-    const isFullAccess = user && (user.role === 'Admin' || user.role === 'Diretor');
+    const isFullAccess = hasFullAccess();
     
     const btnSeed = document.getElementById('btn-seed-calendario');
     const btnNovo = document.getElementById('btn-novo-evento');
@@ -769,11 +862,22 @@ function renderCalendario() {
     }
 
     const tbody = document.querySelector('#table-calendario tbody');
+    if (!tbody) return;
     tbody.innerHTML = '';
+    
+    const searchVal = document.getElementById('search-calendario')?.value.toLowerCase() || '';
+    const filterVal = document.getElementById('filter-calendario-categoria')?.value || '';
     
     const sorted = [...appData.calendario].sort((a,b) => new Date(a['Data do Evento']) - new Date(b['Data do Evento']));
 
     sorted.forEach(c => {
+        const evento = String(c.Evento || '').toLowerCase();
+        const detalhes = String(c.Detalhes || '').toLowerCase();
+        const categoria = String(c.Categoria || '');
+
+        if (filterVal && categoria !== filterVal) return;
+        if (searchVal && !evento.includes(searchVal) && !detalhes.includes(searchVal) && !categoria.toLowerCase().includes(searchVal)) return;
+
         let catColor = '#000';
         const cat = c.Categoria;
         if(cat === 'Reunião Regular') catColor = '#f59e0b';
@@ -811,7 +915,7 @@ function openModal(id) {
             'modal-edit-status', 'modal-mensagem',
             'modal-atividade', 'modal-editar-atividade',
             'modal-editar-apontamento',
-            'modal-novo-evento', 'modal-editar-calendario',
+            'modal-novo-evento', 'modal-calendario', 'modal-editar-calendario',
             'modal-usuario', 'modal-bulk-email'
         ];
         if (crudModals.includes(id)) {
@@ -822,6 +926,22 @@ function openModal(id) {
     document.getElementById(id).classList.remove('hidden');
 }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+function openLightbox(src) {
+    const modal = document.getElementById('lightbox-modal');
+    const img = document.getElementById('lightbox-img');
+    if (modal && img) {
+        img.src = src;
+        modal.classList.remove('hidden');
+    }
+}
+
+function closeLightbox() {
+    const modal = document.getElementById('lightbox-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
 
 function openNewEntradaModal() {
     document.getElementById('entrada-row-id').value = '';
@@ -961,11 +1081,32 @@ function openEditApoiador(row, nome, detalhe, telefone, email) {
     openModal('modal-editar-apoiador');
 }
 
-function openEditAtividade(row, data, nome, obs) {
+function openEditAtividade(row, data, nome, obs, imagens) {
     document.getElementById('edit-atividade-row').value = row;
     document.getElementById('edit-atividade-data').value = data ? new Date(data).toISOString().split('T')[0] : '';
     document.getElementById('edit-atividade-nome').value = nome || '';
     document.getElementById('edit-atividade-obs').value = obs || '';
+    
+    // Configura os previews das imagens existentes
+    const previewContainer = document.getElementById('edit-atividade-preview-container');
+    if (previewContainer) {
+        previewContainer.innerHTML = '';
+        currentEditImagens = [];
+        if (imagens && typeof imagens === 'string') {
+            const imgList = imagens.split('|').filter(x => x.startsWith('data:image'));
+            currentEditImagens = imgList;
+            imgList.forEach(imgBase64 => {
+                const img = document.createElement('img');
+                img.src = imgBase64;
+                img.className = 'w-12 h-12 object-cover rounded border border-outline-variant';
+                previewContainer.appendChild(img);
+            });
+        }
+    }
+    
+    const fileInput = document.getElementById('edit-atividade-imagens');
+    if (fileInput) fileInput.value = '';
+    
     openModal('modal-editar-atividade');
 }
 
@@ -1040,8 +1181,10 @@ document.getElementById('form-editar-atividade').addEventListener('submit', asyn
         row: document.getElementById('edit-atividade-row').value, 
         dataReuniao: document.getElementById('edit-atividade-data').value, 
         atividade: document.getElementById('edit-atividade-nome').value,
-        observacoes: document.getElementById('edit-atividade-obs').value
+        observacoes: document.getElementById('edit-atividade-obs').value,
+        imagens: currentEditImagens.join('|')
     });
+    currentEditImagens = [];
     closeModal('modal-editar-atividade');
     setTimeout(loadAllData, 1500);
 });
@@ -1101,8 +1244,12 @@ document.getElementById('form-atividade').addEventListener('submit', async (e) =
         action: 'addAtividade', 
         dataReuniao: document.getElementById('atividade-data').value, 
         atividade: document.getElementById('atividade-nome').value, 
-        observacoes: document.getElementById('atividade-obs').value 
+        observacoes: document.getElementById('atividade-obs').value,
+        imagens: currentNewImagens.join('|')
     });
+    currentNewImagens = [];
+    const previewContainer = document.getElementById('atividade-preview-container');
+    if (previewContainer) previewContainer.innerHTML = '';
     closeModal('modal-atividade'); e.target.reset(); setTimeout(loadAllData, 1500);
 });
 
@@ -1198,8 +1345,46 @@ document.getElementById('form-pdf-atividades').addEventListener('submit', (e) =>
     
     // Filtro simplificado, aqui pega tudo, mas o certo seria filtrar pelo período, 
     // mas o usuário pediu para calendario especificamente, vou seguir como estava para atividades
-    const tableData = appData.atividades.map(a => [new Date(a['Data da Reunião']).toLocaleDateString('pt-BR'), a['Atividade Realizada'], a['Observações']]);
-    doc.autoTable({ startY: 35, head: [['Data', 'Atividade', 'Observações']], body: tableData });
+    const tableData = appData.atividades.map(a => [
+        new Date(a['Data da Reunião']).toLocaleDateString('pt-BR'), 
+        a['Atividade Realizada'], 
+        a['Observações'] || '',
+        '' // Deixa em branco na tabela para não renderizar os caracteres Base64 como texto
+    ]);
+    doc.autoTable({ 
+        startY: 35, 
+        head: [['Data', 'Atividade', 'Observações', 'Imagens']], 
+        body: tableData,
+        columnStyles: {
+            3: { cellWidth: 90 } // Largura aumentada para acomodar as 4 imagens maiores
+        },
+        styles: {
+            minCellHeight: 24 // Altura da linha aumentada para imagens maiores (20px + margens)
+        },
+        didDrawCell: function(data) {
+            if (data.column.index === 3 && data.cell.section === 'body') {
+                const activity = appData.atividades[data.row.index];
+                const rawImgs = activity ? (activity['Imagens'] || activity.Imagens || '') : '';
+                if (rawImgs && typeof rawImgs === 'string') {
+                    const imgList = rawImgs.split('|').filter(x => x.startsWith('data:image'));
+                    if (imgList.length > 0) {
+                        const startX = data.cell.x + 2;
+                        const startY = data.cell.y + 2;
+                        const imgSize = 20; // Tamanho da imagem duplicado de 10 para 20
+                        imgList.forEach((imgBase64, index) => {
+                            if (index < 4) {
+                                try {
+                                    doc.addImage(imgBase64, 'JPEG', startX + (index * 21), startY, imgSize, imgSize);
+                                } catch(e) {
+                                    console.error("Error drawing image in pdf", e);
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        }
+    });
     doc.save(`Relatorio_Atividades.pdf`);
     closeModal('modal-pdf-atividades');
 });
