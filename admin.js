@@ -2698,18 +2698,31 @@ function renderMensagens() {
         return;
     }
     
+    // Armazena temporariamente no window para o botão de edição consultar de forma segura
+    window._modelosMap = {};
+
     appData.mensagens.forEach(msg => {
+        const id = msg.ID || msg.id || '';
+        window._modelosMap[id] = msg;
+
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td class="font-semibold">${msg.ID || msg.id || ''}</td>
+            <td class="font-semibold">${id}</td>
             <td>${msg.Assunto || msg.assunto || ''}</td>
             <td class="flex gap-2">
-                <button class="btn btn-sm btn-edit" onclick="openEditMensagem('${msg.ID}', '${(msg.Assunto || '').replace(/'/g, "\\'")}', \`${(msg.Corpo || '').replace(/`/g, "\\`").replace(/\$/g, "\\$")}\`, ${msg._row})">Editar</button>
+                <button class="btn btn-sm btn-edit" onclick="openEditMensagemFromMap('${id}')">Editar</button>
                 <button class="btn btn-sm btn-danger" onclick="deleteMensagem(${msg._row})">Excluir</button>
             </td>
         `;
         tbody.appendChild(row);
     });
+}
+
+function openEditMensagemFromMap(id) {
+    const msg = window._modelosMap[id];
+    if (msg) {
+        openEditMensagem(msg.ID || msg.id, msg.Assunto || msg.assunto || '', msg.Corpo || msg.corpo || '', msg._row);
+    }
 }
 
 // ================= CONTROLE DE SUB-ABAS MENSAGENS =================
