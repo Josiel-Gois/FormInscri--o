@@ -1231,12 +1231,15 @@
                 <div class="input-group">
                     <label class="flex justify-between">
                         <span>Corpo do E-mail *</span>
-                        <span class="text-xs text-primary bg-primary-container px-2 py-1 rounded-full cursor-help" title="Use as tags para personalizar a mensagem">Tags Disponíveis</span>
+                        <span class="text-xs text-primary bg-primary-container px-2 py-1 rounded-full cursor-help" title="Tags disponíveis no sistema: {{Nome Criança}}, {{Nome Responsável}}, {{Classe}}, {{Nome Apoiador}}, {{Empresa Apoiador}}, {{Telefone Apoiador}}">Tags Disponíveis</span>
                     </label>
                     <div class="text-xs text-on-surface-variant flex flex-wrap gap-2 mb-2">
-                        <button type="button" class="bg-surface border border-outline px-2 py-1 rounded hover:bg-surface-container" onclick="insertTag('msg-corpo', '{{Nome Criança}}')">{{Nome Criança}}</button>
-                        <button type="button" class="bg-surface border border-outline px-2 py-1 rounded hover:bg-surface-container" onclick="insertTag('msg-corpo', '{{Nome Responsável}}')">{{Nome Responsável}}</button>
-                        <button type="button" class="bg-surface border border-outline px-2 py-1 rounded hover:bg-surface-container" onclick="insertTag('msg-corpo', '{{Classe}}')">{{Classe}}</button>
+                        <button type="button" class="bg-surface border border-outline px-2 py-1 rounded hover:bg-surface-container" onclick="insertTag('msg-corpo', '{{Nome Criança}}')" title="Nome da criança ou membro">{{Nome Criança}}</button>
+                        <button type="button" class="bg-surface border border-outline px-2 py-1 rounded hover:bg-surface-container" onclick="insertTag('msg-corpo', '{{Nome Responsável}}')" title="Nome do Pai/Mãe ou Responsável">{{Nome Responsável}}</button>
+                        <button type="button" class="bg-surface border border-outline px-2 py-1 rounded hover:bg-surface-container" onclick="insertTag('msg-corpo', '{{Classe}}')" title="Classe correspondente à idade">{{Classe}}</button>
+                        <button type="button" class="bg-surface border border-outline px-2 py-1 rounded hover:bg-surface-container" onclick="insertTag('msg-corpo', '{{Nome Apoiador}}')" title="Nome do apoiador">{{Nome Apoiador}}</button>
+                        <button type="button" class="bg-surface border border-outline px-2 py-1 rounded hover:bg-surface-container" onclick="insertTag('msg-corpo', '{{Empresa Apoiador}}')" title="Empresa ou Detalhe do apoiador">{{Empresa Apoiador}}</button>
+                        <button type="button" class="bg-surface border border-outline px-2 py-1 rounded hover:bg-surface-container" onclick="insertTag('msg-corpo', '{{Telefone Apoiador}}')" title="Telefone do apoiador">{{Telefone Apoiador}}</button>
                     </div>
                     <textarea id="msg-corpo" rows="10" required class="input-field border border-outline-variant rounded-lg p-3 w-full font-mono text-sm" placeholder="Mensagem..."></textarea>
                 </div>
