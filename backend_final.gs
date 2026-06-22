@@ -440,20 +440,20 @@ function applyTags(text, dataInscricao) {
   
   // Tags de Inscrição / Membro
   const nameVal = dataInscricao['Nome Criança'] || dataInscricao['childName'] || 'Membro';
-  msg = msg.replace(/\{\{Nome Criança\}\}/g, nameVal);
-  msg = msg.replace(/\{\{Nome Membro\}\}/g, nameVal);
-  msg = msg.replace(/\{\{Nome Lider\}\}/g, nameVal);
-  msg = msg.replace(/\{\{Nome do Adulto\}\}/g, nameVal);
-  msg = msg.replace(/\{\{Nome Responsável\}\}/g, dataInscricao['Nome Pai'] || dataInscricao['fatherName'] || dataInscricao['Nome Mãe'] || 'Responsável');
-  msg = msg.replace(/\{\{Classe\}\}/g, dataInscricao['Classe'] || dataInscricao['classe'] || '');
+  msg = msg.replace(/\{\{Nome Criança\}\}/gi, nameVal);
+  msg = msg.replace(/\{\{Nome Membro\}\}/gi, nameVal);
+  msg = msg.replace(/\{\{Nome Lider\}\}/gi, nameVal);
+  msg = msg.replace(/\{\{Nome do Adulto\}\}/gi, nameVal);
+  msg = msg.replace(/\{\{Nome Responsável\}\}/gi, dataInscricao['Nome Pai'] || dataInscricao['fatherName'] || dataInscricao['Nome Mãe'] || 'Responsável');
+  msg = msg.replace(/\{\{Classe\}\}/gi, dataInscricao['Classe'] || dataInscricao['classe'] || '');
   
   // Tags de Apoiador
   const nomeApoiador = dataInscricao['Nome do Apoiador'] || dataInscricao['nome'] || dataInscricao['Nome'] || '';
   const empresaApoiador = dataInscricao['Empresa/Detalhe'] || dataInscricao['detalhe'] || dataInscricao['Detalhe'] || dataInscricao['empresa'] || '';
   const telefoneApoiador = dataInscricao['Telefone'] || dataInscricao['telefone'] || '';
-  msg = msg.replace(/\{\{Nome Apoiador\}\}/g, nomeApoiador);
-  msg = msg.replace(/\{\{Empresa Apoiador\}\}/g, empresaApoiador);
-  msg = msg.replace(/\{\{Telefone Apoiador\}\}/g, telefoneApoiador);
+  msg = msg.replace(/\{\{Nome Apoiador\}\}/gi, nomeApoiador);
+  msg = msg.replace(/\{\{Empresa Apoiador\}\}/gi, empresaApoiador);
+  msg = msg.replace(/\{\{Telefone Apoiador\}\}/gi, telefoneApoiador);
   
   return msg;
 }
@@ -521,6 +521,7 @@ function sendWelcomeEmail(data) {
 function handleSendBroadcast(payload) {
   const subjectTemplate = payload.assunto;
   const bodyTemplate = payload.corpo;
+  const templateId = payload.templateId || "Envio Avulso";
   const targetRows = payload.rows ? payload.rows.map(r => parseInt(r, 10)) : null;
   let sentCount = 0;
 
@@ -542,7 +543,7 @@ function handleSendBroadcast(payload) {
             name: "Apoio Iceberg Kids"
           });
           sentCount++;
-          writeLogEmail(emailDestino, subjectTemplate, "Envio Manual em Lote");
+          writeLogEmail(emailDestino, templateId, "Envio Manual em Lote");
         } catch(e) {
           console.error("Erro no broadcast de apoiador para " + emailDestino, e);
         }
@@ -569,7 +570,7 @@ function handleSendBroadcast(payload) {
               name: "Diretoria Iceberg Kids"
             });
             sentCount++;
-            writeLogEmail(emailDestino, subjectTemplate, "Envio Manual em Lote");
+            writeLogEmail(emailDestino, templateId, "Envio Manual em Lote");
           } catch(e) {
             console.error("Erro no broadcast para " + emailDestino, e);
           }

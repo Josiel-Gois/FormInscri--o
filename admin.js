@@ -3131,6 +3131,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const res = await fetchPOST({
                     action: 'sendBroadcastEmail',
+                    templateId: template.ID || template.id,
                     assunto: template.Assunto,
                     corpo: template.Corpo,
                     targetType: targetType,
