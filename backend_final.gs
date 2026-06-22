@@ -4,13 +4,19 @@
 
 function setupSheets() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheets = ['Inscricoes', 'Usuarios', 'Apoiadores', 'Atividades', 'Apontamentos', 'Calendario', 'Financeiro', 'Mensagens', 'Regras'];
+  const sheets = ['Inscricoes', 'Usuarios', 'Apoiadores', 'Atividades', 'Apontamentos', 'Calendario', 'Financeiro', 'Mensagens', 'Regras', 'LogsEmails'];
   
   sheets.forEach(name => {
     if (!ss.getSheetByName(name)) {
       ss.insertSheet(name);
     }
   });
+
+  // Criar cabeçalho da aba LogsEmails se estiver vazia
+  const logsSheet = ss.getSheetByName('LogsEmails');
+  if (logsSheet.getLastRow() === 0) {
+    logsSheet.appendRow(['Data', 'Horario', 'Destinatario Email', 'Modelo/ID Mensagem', 'Tipo de Disparo']);
+  }
 
   // Criar cabeçalho da aba Regras se estiver vazia
   const regrasSheet = ss.getSheetByName('Regras');
@@ -502,6 +508,7 @@ function sendWelcomeEmail(data) {
         name: "Clube Iceberg Kids"
       });
       console.log("E-mail enviado com sucesso!");
+      writeLogEmail(emailDestino, templateId, "Disparo Automático");
     } else {
       console.warn("Assunto ou Corpo do template '" + templateId + "' vazio.");
     }
@@ -534,6 +541,7 @@ function handleSendBroadcast(payload) {
             name: "Apoio Iceberg Kids"
           });
           sentCount++;
+          writeLogEmail(emailDestino, subjectTemplate, "Envio Manual em Lote");
         } catch(e) {
           console.error("Erro no broadcast de apoiador para " + emailDestino, e);
         }
@@ -560,6 +568,7 @@ function handleSendBroadcast(payload) {
               name: "Diretoria Iceberg Kids"
             });
             sentCount++;
+            writeLogEmail(emailDestino, subjectTemplate, "Envio Manual em Lote");
           } catch(e) {
             console.error("Erro no broadcast para " + emailDestino, e);
           }
@@ -788,7 +797,7 @@ function processarRegrasAutomaticas(gatilho, entidadeConectada) {
       const assuntoFinal = applyTags(assuntoTemplate, dadosMesclados);
       const corpoFinal = applyTags(corpoTemplate, dadosMesclados);
 
-      try {
+       try {
         MailApp.sendEmail({
           to: dest.email,
           subject: assuntoFinal,
@@ -796,11 +805,30 @@ function processarRegrasAutomaticas(gatilho, entidadeConectada) {
           name: "Clube Iceberg Kids"
         });
         console.log(`Disparo automático (${regra.Nome}) enviado com sucesso para ${dest.email}`);
+        writeLogEmail(dest.email, regra.Template, "Disparo Automático (" + regra.Nome + ")");
       } catch(e) {
         console.error(`Erro no disparo automático (${regra.Nome}) para ${dest.email}:`, e);
       }
     });
   });
+}
+
+function writeLogEmail(email, templateId, tipoDisparo) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('LogsEmails');
+    if (!sheet) return;
+    
+    const agora = new Date();
+    // Formata data em pt-BR (DD/MM/AAAA)
+    const dataStr = agora.toLocaleDateString('pt-BR');
+    // Formata horario (HH:MM:SS)
+    const horaStr = agora.toLocaleTimeString('pt-BR');
+    
+    sheet.appendRow([dataStr, horaStr, email, templateId, tipoDisparo]);
+  } catch(e) {
+    console.error("Erro ao gravar log de e-mail na planilha: ", e);
+  }
 }
 
 function obterEmailsGrupo(grupo, entidadeConectada) {
