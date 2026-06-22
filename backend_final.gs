@@ -803,6 +803,22 @@ function obterEmailsGrupo(grupo, entidadeConectada) {
   }
 
   // Grupos vinculados a aventureiros ativos
+  // Se for uma inscrição recente (gatilho 'ao-inscrever'), não queremos enviar para TODOS os inscritos ativos da planilha,
+  // mas sim APENAS para a entidadeConectada que acabou de ser criada.
+  if (entidadeConectada && (grupo === 'responsavel' || grupo === 'mae' || grupo === 'pai')) {
+    if (grupo === 'mae') {
+      const email = getVal(entidadeConectada, 'Email Mãe') || getVal(entidadeConectada, 'emailMae') || getVal(entidadeConectada, 'motherEmail');
+      if (email) list.push({ email, dados: entidadeConectada });
+    } else if (grupo === 'pai') {
+      const email = getVal(entidadeConectada, 'Email Pai') || getVal(entidadeConectada, 'emailPai') || getVal(entidadeConectada, 'fatherEmail');
+      if (email) list.push({ email, dados: entidadeConectada });
+    } else if (grupo === 'responsavel') {
+      const email = getTargetEmail(entidadeConectada);
+      if (email) list.push({ email, dados: entidadeConectada });
+    }
+    return list;
+  }
+
   const inscricoes = getSheetData('Inscricoes');
   const ativos = inscricoes.filter(i => {
     const s = String(i.Status || '').trim();
