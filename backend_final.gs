@@ -131,7 +131,8 @@ function doGet(e) {
       calendario: getSheetData('Calendario'),
       financeiro: getSheetData('Financeiro'),
       mensagens: getSheetData('Mensagens'),
-      regras: getSheetData('Regras')
+      regras: getSheetData('Regras'),
+      logsEmails: getSheetData('LogsEmails')
     });
   }
 

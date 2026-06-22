@@ -474,6 +474,7 @@ async function loadAllData() {
         appData.financeiro = allData.financeiro || [];
         appData.mensagens = allData.mensagens || [];
         appData.regras = allData.regras || [];
+        appData.logsEmails = allData.logsEmails || [];
         
         populateChildDropdown();
         
@@ -2735,32 +2736,83 @@ function switchMensagensSubTab(tab) {
     
     const btnModelos = document.getElementById('subtab-btn-mensagens');
     const btnRegras = document.getElementById('subtab-btn-regras');
+    const btnLogs = document.getElementById('subtab-btn-logs');
+    
     const contentModelos = document.getElementById('subtab-content-modelos');
     const contentRegras = document.getElementById('subtab-content-regras');
+    const contentLogs = document.getElementById('subtab-content-logs');
+    
     const btnNovaMensagem = document.getElementById('btn-nova-mensagem');
     const btnNovaRegra = document.getElementById('btn-nova-regra');
 
+    // Reset styles
+    [btnModelos, btnRegras, btnLogs].forEach(btn => {
+        if (btn) {
+            btn.classList.add('border-transparent', 'text-on-surface-variant');
+            btn.classList.remove('border-primary', 'text-primary');
+        }
+    });
+    [contentModelos, contentRegras, contentLogs, btnNovaMensagem, btnNovaRegra].forEach(el => {
+        if (el) el.classList.add('hidden');
+    });
+
     if (tab === 'modelos') {
-        btnModelos.classList.add('border-primary', 'text-primary');
-        btnModelos.classList.remove('border-transparent', 'text-on-surface-variant');
-        btnRegras.classList.add('border-transparent', 'text-on-surface-variant');
-        btnRegras.classList.remove('border-primary', 'text-primary');
-        
-        contentModelos.classList.remove('hidden');
-        contentRegras.classList.add('hidden');
-        btnNovaMensagem.classList.remove('hidden');
-        btnNovaRegra.classList.add('hidden');
-    } else {
-        btnRegras.classList.add('border-primary', 'text-primary');
-        btnRegras.classList.remove('border-transparent', 'text-on-surface-variant');
-        btnModelos.classList.add('border-transparent', 'text-on-surface-variant');
-        btnModelos.classList.remove('border-primary', 'text-primary');
-        
-        contentRegras.classList.remove('hidden');
-        contentModelos.classList.add('hidden');
-        btnNovaRegra.classList.remove('hidden');
-        btnNovaMensagem.classList.add('hidden');
+        if (btnModelos) {
+            btnModelos.classList.add('border-primary', 'text-primary');
+            btnModelos.classList.remove('border-transparent', 'text-on-surface-variant');
+        }
+        if (contentModelos) contentModelos.classList.remove('hidden');
+        if (btnNovaMensagem) btnNovaMensagem.classList.remove('hidden');
+    } else if (tab === 'regras') {
+        if (btnRegras) {
+            btnRegras.classList.add('border-primary', 'text-primary');
+            btnRegras.classList.remove('border-transparent', 'text-on-surface-variant');
+        }
+        if (contentRegras) contentRegras.classList.remove('hidden');
+        if (btnNovaRegra) btnNovaRegra.classList.remove('hidden');
+    } else if (tab === 'logs') {
+        if (btnLogs) {
+            btnLogs.classList.add('border-primary', 'text-primary');
+            btnLogs.classList.remove('border-transparent', 'text-on-surface-variant');
+        }
+        if (contentLogs) contentLogs.classList.remove('hidden');
+        renderLogsEmails();
     }
+}
+
+function renderLogsEmails() {
+    const tbody = document.getElementById('tbody-logs-emails');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    const logs = appData.logsEmails || [];
+    if (logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center font-bold py-4">Nenhum registro de e-mail enviado.</td></tr>';
+        return;
+    }
+    
+    // Ordenar do mais novo para o mais antigo (se possuir ID/_row correspondente ao final da planilha)
+    const sortedLogs = [...logs].reverse();
+    
+    sortedLogs.forEach(log => {
+        const row = document.createElement('tr');
+        // Trata a data se for objeto Date ou String ISO
+        let dateVal = log.Data || '';
+        if (dateVal && dateVal.includes && dateVal.includes('T')) {
+            try {
+                dateVal = new Date(dateVal).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+            } catch(e) {}
+        }
+        
+        row.innerHTML = `
+            <td>${dateVal}</td>
+            <td>${log.Horario || log.horario || ''}</td>
+            <td>${log['Destinatario Email'] || log.destinatario || ''}</td>
+            <td>${log['Modelo/ID Mensagem'] || log.template || ''}</td>
+            <td><span class="px-2 py-0.5 rounded text-[10px] font-bold ${String(log['Tipo de Disparo']).includes('Manual') ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}">${log['Tipo de Disparo'] || ''}</span></td>
+        `;
+        tbody.appendChild(row);
+    });
 }
 
 // ================= GESTÃO DE REGRAS DE DISPARO =================

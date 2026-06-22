@@ -1119,6 +1119,7 @@
                     <div class="flex border-b border-outline-variant flex-wrap gap-0">
                         <button type="button" id="subtab-btn-mensagens" class="px-5 py-2.5 border-b-2 border-primary text-primary font-bold text-sm transition-all" onclick="switchMensagensSubTab('modelos')">Modelos de Mensagem</button>
                         <button type="button" id="subtab-btn-regras" class="px-5 py-2.5 border-b-2 border-transparent text-on-surface-variant hover:text-primary font-bold text-sm transition-all" onclick="switchMensagensSubTab('regras')">Regras de Disparo Automático</button>
+                        <button type="button" id="subtab-btn-logs" class="px-5 py-2.5 border-b-2 border-transparent text-on-surface-variant hover:text-primary font-bold text-sm transition-all" onclick="switchMensagensSubTab('logs')">Histórico/Logs de Envio</button>
                     </div>
 
                     <!-- Conteúdo: Modelos de Mensagem -->
@@ -1157,6 +1158,28 @@
                                         </tr>
                                     </thead>
                                     <tbody id="tbody-regras">
+                                        <!-- Rendered dynamically by admin.js -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Conteúdo: Logs de Envio -->
+                    <div id="subtab-content-logs" class="hidden space-y-4">
+                        <div class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant shadow-sm space-y-4">
+                            <div class="overflow-x-auto w-full">
+                                <table class="w-full text-left border-collapse text-xs" id="table-logs-emails">
+                                    <thead>
+                                        <tr>
+                                            <th>Data</th>
+                                            <th>Horário</th>
+                                            <th>Destinatário</th>
+                                            <th>Modelo/ID</th>
+                                            <th>Tipo de Disparo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-logs-emails">
                                         <!-- Rendered dynamically by admin.js -->
                                     </tbody>
                                 </table>
