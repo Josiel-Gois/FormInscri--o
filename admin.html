@@ -1320,6 +1320,13 @@
                     </select>
                 </div>
                 <div class="input-group">
+                    <label>Público-Alvo:</label>
+                    <select id="bulk-email-target-type" onchange="renderBulkContactsList()">
+                        <option value="inscrito">Inscritos Ativos (Aventureiros, Liderança, Pais)</option>
+                        <option value="apoiador">Apoiadores Cadastrados</option>
+                    </select>
+                </div>
+                <div class="input-group">
                     <div class="flex justify-between items-center mb-1">
                         <label>Contatos a Enviar:</label>
                         <div class="flex gap-2 text-xs">

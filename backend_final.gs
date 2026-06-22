@@ -511,37 +511,62 @@ function sendWelcomeEmail(data) {
 }
 
 function handleSendBroadcast(payload) {
-  const inscricoes = getSheetData('Inscricoes');
   const subjectTemplate = payload.assunto;
   const bodyTemplate = payload.corpo;
   const targetRows = payload.rows ? payload.rows.map(r => parseInt(r, 10)) : null;
   let sentCount = 0;
 
-  inscricoes.forEach(insc => {
-    // Apenas enviar para inscrições ativas
-    if (String(insc.Status).trim() !== 'Cancelada') {
-      const emailDestino = getTargetEmail(insc);
-      const cleanEmail = emailDestino.toLowerCase().trim();
-      const rowNum = parseInt(insc._row, 10);
+  if (payload.targetType === 'apoiador') {
+    const apoiadores = getSheetData('Apoiadores');
+    apoiadores.forEach(ap => {
+      const emailDestino = String(ap.Email || ap.email || '').trim();
+      const rowNum = parseInt(ap._row, 10);
       
-      if (cleanEmail.includes('@') && (!targetRows || targetRows.includes(rowNum))) {
-        const assuntoFinal = applyTags(subjectTemplate, insc);
-        const corpoFinal = applyTags(bodyTemplate, insc);
+      if (emailDestino.includes('@') && (!targetRows || targetRows.includes(rowNum))) {
+        const assuntoFinal = applyTags(subjectTemplate, ap);
+        const corpoFinal = applyTags(bodyTemplate, ap);
         
         try {
           MailApp.sendEmail({
             to: emailDestino,
             subject: assuntoFinal,
             body: corpoFinal,
-            name: "Diretoria Iceberg Kids"
+            name: "Apoio Iceberg Kids"
           });
           sentCount++;
         } catch(e) {
-          console.error("Erro no broadcast para " + emailDestino, e);
+          console.error("Erro no broadcast de apoiador para " + emailDestino, e);
         }
       }
-    }
-  });
+    });
+  } else {
+    const inscricoes = getSheetData('Inscricoes');
+    inscricoes.forEach(insc => {
+      // Apenas enviar para inscrições ativas
+      if (String(insc.Status).trim() !== 'Cancelada') {
+        const emailDestino = getTargetEmail(insc);
+        const cleanEmail = emailDestino.toLowerCase().trim();
+        const rowNum = parseInt(insc._row, 10);
+        
+        if (cleanEmail.includes('@') && (!targetRows || targetRows.includes(rowNum))) {
+          const assuntoFinal = applyTags(subjectTemplate, insc);
+          const corpoFinal = applyTags(bodyTemplate, insc);
+          
+          try {
+            MailApp.sendEmail({
+              to: emailDestino,
+              subject: assuntoFinal,
+              body: corpoFinal,
+              name: "Diretoria Iceberg Kids"
+            });
+            sentCount++;
+          } catch(e) {
+            console.error("Erro no broadcast para " + emailDestino, e);
+          }
+        }
+      }
+    });
+  }
 
   return { success: true, enviados: sentCount };
 }

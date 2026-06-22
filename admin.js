@@ -2951,31 +2951,65 @@ function openBulkEmailModal() {
         select.appendChild(opt);
     });
     
+    // Resetar o seletor de público-alvo para o padrão (Inscritos)
+    const targetSelect = document.getElementById('bulk-email-target-type');
+    if (targetSelect) targetSelect.value = 'inscrito';
+    
+    renderBulkContactsList();
+    openModal('modal-bulk-email');
+}
+
+function renderBulkContactsList() {
+    const targetType = document.getElementById('bulk-email-target-type').value;
     const list = document.getElementById('bulk-contacts-list');
     list.innerHTML = '';
     
-    const activeInsc = appData.inscricoes.filter(i => String(i.Status || '').trim() !== 'Cancelada');
-    if (activeInsc.length === 0) {
-        list.innerHTML = '<p class="text-xs text-outline">Nenhum inscrito ativo disponível.</p>';
-    } else {
-        activeInsc.forEach(i => {
-            const name = i['Nome Criança'] || i['Nome Completo'] || i['childName'] || 'Adulto sem Nome';
-            const email = i['Email Responsável'] || i['Email Mãe'] || i['Email Pai'] || i['Email'] || '';
-            const tipo = i['TipoInscricao'] || i['Cargo'] || 'Aventureiro';
-            
-            if (email) {
-                const item = document.createElement('label');
-                item.className = 'flex items-center gap-2 text-sm text-on-surface hover:bg-surface-container-low p-1.5 rounded cursor-pointer';
-                item.innerHTML = `
-                    <input type="checkbox" class="bulk-contact-cb rounded text-primary" value="${i._row}" checked>
-                    <span><strong>${name}</strong> (${tipo}) - <span class="text-outline text-xs">${email}</span></span>
-                `;
-                list.appendChild(item);
+    if (targetType === 'apoiador') {
+        const activeApoiadores = appData.apoiadores || [];
+        if (activeApoiadores.length === 0) {
+            list.innerHTML = '<p class="text-xs text-outline p-2">Nenhum apoiador cadastrado disponível.</p>';
+        } else {
+            activeApoiadores.forEach(ap => {
+                const name = ap['Nome do Apoiador'] || ap['nome'] || ap['Nome'] || 'Apoiador sem Nome';
+                const email = ap['Email'] || ap['email'] || '';
+                const empresa = ap['Empresa/Detalhe'] || ap['detalhe'] || 'Sem Detalhes';
+                
+                if (email) {
+                    const item = document.createElement('label');
+                    item.className = 'flex items-center gap-2 text-sm text-on-surface hover:bg-surface-container-low p-1.5 rounded cursor-pointer';
+                    item.innerHTML = `
+                        <input type="checkbox" class="bulk-contact-cb rounded text-primary" value="${ap._row}" checked>
+                        <span><strong>${name}</strong> (${empresa}) - <span class="text-outline text-xs">${email}</span></span>
+                    `;
+                    list.appendChild(item);
+                }
+            });
+            if (list.innerHTML === '') {
+                list.innerHTML = '<p class="text-xs text-outline p-2">Nenhum apoiador com e-mail cadastrado.</p>';
             }
-        });
+        }
+    } else {
+        const activeInsc = appData.inscricoes.filter(i => String(i.Status || '').trim() !== 'Cancelada');
+        if (activeInsc.length === 0) {
+            list.innerHTML = '<p class="text-xs text-outline p-2">Nenhum inscrito ativo disponível.</p>';
+        } else {
+            activeInsc.forEach(i => {
+                const name = i['Nome Criança'] || i['Nome Completo'] || i['childName'] || 'Adulto sem Nome';
+                const email = i['Email Responsável'] || i['Email Mãe'] || i['Email Pai'] || i['Email'] || '';
+                const tipo = i['TipoInscricao'] || i['Cargo'] || 'Aventureiro';
+                
+                if (email) {
+                    const item = document.createElement('label');
+                    item.className = 'flex items-center gap-2 text-sm text-on-surface hover:bg-surface-container-low p-1.5 rounded cursor-pointer';
+                    item.innerHTML = `
+                        <input type="checkbox" class="bulk-contact-cb rounded text-primary" value="${i._row}" checked>
+                        <span><strong>${name}</strong> (${tipo}) - <span class="text-outline text-xs">${email}</span></span>
+                    `;
+                    list.appendChild(item);
+                }
+            });
+        }
     }
-    
-    openModal('modal-bulk-email');
 }
 
 function toggleSelectAllBulk(select) {
@@ -3036,6 +3070,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             
+            const targetType = document.getElementById('bulk-email-target-type').value;
             const rows = Array.from(selectedCbs).map(cb => parseInt(cb.value, 10));
             
             if (!confirm(`Deseja enviar este e-mail para ${rows.length} contatos selecionados?`)) return;
@@ -3046,6 +3081,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     action: 'sendBroadcastEmail',
                     assunto: template.Assunto,
                     corpo: template.Corpo,
+                    targetType: targetType,
                     rows: rows
                 });
                 
