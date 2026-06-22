@@ -1545,6 +1545,8 @@ function drawFichaFields(doc, insc) {
         addLine("Profissão", getVal(insc, 'Profissão') || getVal(insc, 'Profissao'));
         addLine("Religião", getVal(insc, 'Religião') || getVal(insc, 'Religiao'));
         addLine("Igreja", getVal(insc, 'Igreja') || getVal(insc, 'Igreja que frequenta') || getVal(insc, 'Nome da Igreja que frequenta'));
+    } else {
+        addLine("CPF da Criança", getVal(insc, 'CPF') || getVal(insc, 'cpf'));
     }
     
     addSection("Endereço");

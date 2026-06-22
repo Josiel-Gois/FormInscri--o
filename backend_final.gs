@@ -251,7 +251,21 @@ function handleAddInscricao(data) {
       colIndex = headers.length - 1;
     }
     
-    rowData[colIndex] = data[key];
+    // Tratar CPF para evitar que o Excel / Google Sheets remova o zero à esquerda
+    let value = data[key];
+    if (typeof value === 'string' || typeof value === 'number') {
+      const stringValue = String(value).trim();
+      // Verifica se a chave corresponde a um campo de CPF e se contém dígitos
+      if (cleanKey.includes('cpf') && stringValue.length > 0) {
+        // Se começar com zero ou for composto apenas de números (ou formatado), adicionamos a aspa simples (')
+        // no início para o Planilhas Google interpretar estritamente como texto
+        if (!stringValue.startsWith("'")) {
+          value = "'" + stringValue;
+        }
+      }
+    }
+    
+    rowData[colIndex] = value;
   });
   
   sheet.appendRow(rowData);
