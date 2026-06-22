@@ -2266,10 +2266,16 @@ async function copyChartAsImage(canvasId) {
 let currentAdimplenciaTab = 'inscricao';
 
 function openAdimplenciaModal() {
-    // Aventureiros ativos: Aceita, Cadastro finalizado ou Recebida
+    // Aventureiros ativos: Aceita, Cadastro finalizado ou Recebida (apenas com cargo Aventureiro)
     const aventureirosAtivos = appData.inscricoes.filter(i => {
         const s = String(i.Status || '').trim();
-        return s === 'Aceita' || s === 'Cadastro finalizado' || s === 'Recebida';
+        const cargo = String(i.Cargo || 'Aventureiro(a)').trim().toLowerCase();
+        
+        // Mantém apenas inscrições ativas cujo cargo seja Aventureiro(a)
+        const isAtivo = s === 'Aceita' || s === 'Cadastro finalizado' || s === 'Recebida';
+        const isAventureiro = cargo.includes('aventureiro') || cargo === '';
+        
+        return isAtivo && isAventureiro;
     });
 
     const financeiro = appData.financeiro || [];
