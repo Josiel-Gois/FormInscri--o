@@ -473,6 +473,7 @@ async function loadAllData() {
         appData.usuarios = allData.usuarios || [];
         appData.financeiro = allData.financeiro || [];
         appData.mensagens = allData.mensagens || [];
+        appData.regras = allData.regras || [];
         
         populateChildDropdown();
         
@@ -485,6 +486,7 @@ async function loadAllData() {
         renderFinanceiro();
         renderUsuarios();
         if (typeof renderMensagens === 'function') renderMensagens();
+        if (typeof renderRegras === 'function') renderRegras();
     } catch (error) {
         console.error("Erro ao carregar dados", error);
     }
@@ -912,7 +914,7 @@ function openModal(id) {
         const crudModals = [
             'modal-apoiador', 'modal-editar-apoiador',
             'modal-financeiro-entrada', 'modal-financeiro-saida',
-            'modal-edit-status', 'modal-mensagem',
+            'modal-edit-status', 'modal-mensagem', 'modal-regra',
             'modal-atividade', 'modal-editar-atividade',
             'modal-editar-apontamento',
             'modal-novo-evento', 'modal-calendario', 'modal-editar-calendario',
@@ -2710,6 +2712,155 @@ function renderMensagens() {
     });
 }
 
+// ================= CONTROLE DE SUB-ABAS MENSAGENS =================
+let currentMensagensSubTab = 'modelos';
+
+function switchMensagensSubTab(tab) {
+    currentMensagensSubTab = tab;
+    
+    const btnModelos = document.getElementById('subtab-btn-mensagens');
+    const btnRegras = document.getElementById('subtab-btn-regras');
+    const contentModelos = document.getElementById('subtab-content-modelos');
+    const contentRegras = document.getElementById('subtab-content-regras');
+    const btnNovaMensagem = document.getElementById('btn-nova-mensagem');
+    const btnNovaRegra = document.getElementById('btn-nova-regra');
+
+    if (tab === 'modelos') {
+        btnModelos.classList.add('border-primary', 'text-primary');
+        btnModelos.classList.remove('border-transparent', 'text-on-surface-variant');
+        btnRegras.classList.add('border-transparent', 'text-on-surface-variant');
+        btnRegras.classList.remove('border-primary', 'text-primary');
+        
+        contentModelos.classList.remove('hidden');
+        contentRegras.classList.add('hidden');
+        btnNovaMensagem.classList.remove('hidden');
+        btnNovaRegra.classList.add('hidden');
+    } else {
+        btnRegras.classList.add('border-primary', 'text-primary');
+        btnRegras.classList.remove('border-transparent', 'text-on-surface-variant');
+        btnModelos.classList.add('border-transparent', 'text-on-surface-variant');
+        btnModelos.classList.remove('border-primary', 'text-primary');
+        
+        contentRegras.classList.remove('hidden');
+        contentModelos.classList.add('hidden');
+        btnNovaRegra.classList.remove('hidden');
+        btnNovaMensagem.classList.add('hidden');
+    }
+}
+
+// ================= GESTÃO DE REGRAS DE DISPARO =================
+
+function renderRegras() {
+    const tbody = document.getElementById('tbody-regras');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (!appData.regras || appData.regras.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center font-bold py-4">Nenhuma regra de disparo cadastrada.</td></tr>';
+        return;
+    }
+
+    const gatilhosNomes = {
+        'ao-inscrever': 'Ao inscrever',
+        'primeiro-dia-util': '1º dia útil do mês',
+        'ultimo-dia-util': 'Último dia útil do mês',
+        'novo-apoiador': 'Novo apoiador lançado'
+    };
+
+    const destinatariosNomes = {
+        'mae': 'Mães',
+        'pai': 'Pais',
+        'responsavel': 'Responsáveis Legais',
+        'diretoria': 'Diretoria',
+        'apoiador-especifico': 'Apoiador específico',
+        'todos-apoiadores': 'Todos os Apoiadores',
+        'todos-ativos': 'Todos Ativos'
+    };
+
+    appData.regras.forEach(r => {
+        const row = document.createElement('tr');
+        const statusColor = r.Status === 'Ativa' ? 'text-green-700 bg-green-50' : 'text-red-700 bg-red-50';
+        row.innerHTML = `
+            <td class="font-semibold">${r.Nome || 'Sem Nome'}</td>
+            <td>${gatilhosNomes[r.Gatilho] || r.Gatilho || '---'}</td>
+            <td>${destinatariosNomes[r.Destinatario] || r.Destinatario || '---'}</td>
+            <td><code class="bg-surface-container px-2 py-0.5 rounded text-primary text-xs font-semibold">${r.Template || '---'}</code></td>
+            <td><span class="text-[11px] px-2 py-0.5 rounded-full font-semibold ${statusColor}">${r.Status || 'Ativa'}</span></td>
+            <td class="flex gap-2">
+                <button class="btn btn-sm btn-edit" onclick="openEditRegra('${r.ID}', '${(r.Nome || '').replace(/'/g, "\\'")}', '${r.Gatilho}', '${r.Destinatario}', '${r.Template}', '${r.Status}', ${r._row})">Editar</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteRegra(${r._row})">Excluir</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function populateRegrasTemplates() {
+    const select = document.getElementById('regra-template');
+    if (!select) return;
+    select.innerHTML = '';
+
+    if (!appData.mensagens || appData.mensagens.length === 0) {
+        select.innerHTML = '<option value="">Crie primeiro um modelo de mensagem</option>';
+        return;
+    }
+
+    appData.mensagens.forEach(msg => {
+        const opt = document.createElement('option');
+        opt.value = msg.ID;
+        opt.textContent = `${msg.ID} - ${msg.Assunto}`;
+        select.appendChild(opt);
+    });
+}
+
+function openCreateRegra() {
+    populateRegrasTemplates();
+    const mode = document.getElementById('regra-mode');
+    mode.value = 'create';
+    document.getElementById('regra-row-id').value = '';
+    document.getElementById('regra-nome').value = '';
+    document.getElementById('regra-gatilho').value = 'ao-inscrever';
+    document.getElementById('regra-destinatario').value = 'responsavel';
+    document.getElementById('regra-status').value = 'Ativa';
+    document.getElementById('modal-regra-title').textContent = 'Nova Regra de Disparo';
+    openModal('modal-regra');
+}
+
+function openEditRegra(id, nome, gatilho, destinatario, template, status, row) {
+    populateRegrasTemplates();
+    const mode = document.getElementById('regra-mode');
+    mode.value = 'edit';
+    document.getElementById('regra-row-id').value = row;
+    document.getElementById('regra-nome').value = nome;
+    document.getElementById('regra-gatilho').value = gatilho;
+    document.getElementById('regra-destinatario').value = destinatario;
+    document.getElementById('regra-template').value = template;
+    document.getElementById('regra-status').value = status;
+    document.getElementById('modal-regra-title').textContent = 'Editar Regra de Disparo';
+    openModal('modal-regra');
+}
+
+async function deleteRegra(rowNum) {
+    if (isPastor()) {
+        openModal('modal-acesso-negado');
+        return;
+    }
+    if (!confirm('Tem certeza que deseja excluir esta regra de disparo?')) return;
+    showLoader(true);
+    try {
+        await fetchPOST({
+            action: 'deleteRow',
+            sheetName: 'Regras',
+            row: rowNum
+        });
+        setTimeout(loadAllData, 1000);
+    } catch(e) {
+        console.error(e);
+        alert('Erro ao excluir regra.');
+    }
+    showLoader(false);
+}
+
 function openCreateMensagem() {
     const msgMode = document.getElementById('msg-mode');
     msgMode.value = 'create';
@@ -2892,6 +3043,44 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (err) {
                 console.error(err);
                 alert('Erro ao disparar e-mails.');
+            }
+            showLoader(false);
+        });
+    }
+    // Submit Regras de Disparo
+    const formRegra = document.getElementById('form-regra');
+    if (formRegra) {
+        formRegra.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoader(true);
+            const rowVal = document.getElementById('regra-row-id').value;
+            const mode = document.getElementById('regra-mode').value;
+            
+            const nome = document.getElementById('regra-nome').value;
+            const gatilho = document.getElementById('regra-gatilho').value;
+            const destinatario = document.getElementById('regra-destinatario').value;
+            const template = document.getElementById('regra-template').value;
+            const status = document.getElementById('regra-status').value;
+            
+            const id = mode === 'edit' ? undefined : 'REG_' + new Date().getTime();
+
+            try {
+                await fetchPOST({
+                    action: 'saveRegra',
+                    row: rowVal ? parseInt(rowVal, 10) : null,
+                    id,
+                    nome,
+                    gatilho,
+                    destinatario,
+                    template,
+                    status
+                });
+                closeModal('modal-regra');
+                formRegra.reset();
+                setTimeout(loadAllData, 1000);
+            } catch (err) {
+                console.error(err);
+                alert('Erro ao salvar regra de disparo.');
             }
             showLoader(false);
         });

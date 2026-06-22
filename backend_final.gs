@@ -4,13 +4,21 @@
 
 function setupSheets() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheets = ['Inscricoes', 'Usuarios', 'Apoiadores', 'Atividades', 'Apontamentos', 'Calendario', 'Financeiro', 'Mensagens'];
+  const sheets = ['Inscricoes', 'Usuarios', 'Apoiadores', 'Atividades', 'Apontamentos', 'Calendario', 'Financeiro', 'Mensagens', 'Regras'];
   
   sheets.forEach(name => {
     if (!ss.getSheetByName(name)) {
       ss.insertSheet(name);
     }
   });
+
+  // Criar cabeçalho da aba Regras se estiver vazia
+  const regrasSheet = ss.getSheetByName('Regras');
+  if (regrasSheet.getLastRow() === 0) {
+    regrasSheet.appendRow(['ID', 'Nome', 'Gatilho', 'Destinatario', 'Template', 'Status']);
+    // Adiciona regra padrão inicial de boas-vindas
+    regrasSheet.appendRow(['REG_BOAS_VINDAS', 'Disparo de Boas-vindas Inicial', 'ao-inscrever', 'responsavel', 'boas-vindas', 'Ativa']);
+  }
 
   // Criar cabeçalho e usuário inicial se a aba estiver vazia
   const userSheet = ss.getSheetByName('Usuarios');
@@ -116,7 +124,8 @@ function doGet(e) {
       apontamentos: getSheetData('Apontamentos'),
       calendario: getSheetData('Calendario'),
       financeiro: getSheetData('Financeiro'),
-      mensagens: getSheetData('Mensagens')
+      mensagens: getSheetData('Mensagens'),
+      regras: getSheetData('Regras')
     });
   }
 
@@ -178,6 +187,9 @@ function doPost(e) {
     if (action === 'updateFinanceiro') {
       return jsonResponse(handleSaveFinanceiro(payload));
     }
+
+    // REGRAS
+    if (action === 'saveRegra') return jsonResponse(handleSaveRegra(payload));
 
     // MENSAGENS
     if (action === 'saveMensagem') return jsonResponse(handleSaveMensagem(payload));
@@ -249,6 +261,13 @@ function handleAddInscricao(data) {
     sendWelcomeEmail(data);
   } catch(e) {
     console.error("Erro ao enviar e-mail: " + e);
+  }
+
+  // Processar regras automáticas com o gatilho 'ao-inscrever'
+  try {
+    processarRegrasAutomaticas('ao-inscrever', data);
+  } catch(e) {
+    console.error("Erro ao processar regras de disparo automatico na inscricao: " + e);
   }
 
   return { success: true };
@@ -643,5 +662,206 @@ function handleSaveApoiador(payload) {
   } else {
     sheet.appendRow(rowData);
   }
+  
+  // Gatilho automático: Quando um novo apoiador é lançado no hall
+  try {
+    processarRegrasAutomaticas('novo-apoiador', source);
+  } catch(e) {
+    console.error('Erro ao processar regras de novo apoiador:', e);
+  }
+
   return { success: true };
+}
+
+// ================= GESTÃO DE REGRAS DE DISPARO =================
+
+function handleSaveRegra(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Regras');
+  let targetRow = null;
+  
+  if (payload.row) {
+    targetRow = parseInt(payload.row, 10);
+  }
+  
+  if (!targetRow || isNaN(targetRow)) {
+    const data = getSheetData('Regras');
+    const searchId = payload.oldId || payload.id;
+    const existing = data.find(r => String(r.ID).trim() === String(searchId).trim() || String(r.id).trim() === String(searchId).trim());
+    if (existing) {
+      targetRow = existing._row;
+    }
+  }
+
+  const rowData = [
+    payload.id || 'REG_' + new Date().getTime(),
+    payload.nome,
+    payload.gatilho,
+    payload.destinatario,
+    payload.template,
+    payload.status || 'Ativa'
+  ];
+
+  if (targetRow && !isNaN(targetRow)) {
+    sheet.getRange(targetRow, 1, 1, 6).setValues([rowData]);
+  } else {
+    sheet.appendRow(rowData);
+  }
+  return { success: true };
+}
+
+function processarRegrasAutomaticas(gatilho, entidadeConectada) {
+  const regras = getSheetData('Regras');
+  const regrasAtivas = regras.filter(r => r.Gatilho === gatilho && r.Status === 'Ativa');
+  if (regrasAtivas.length === 0) return;
+
+  const msgs = getSheetData('Mensagens');
+
+  regrasAtivas.forEach(regra => {
+    const template = msgs.find(m => m.ID === regra.Template || m.id === regra.Template);
+    if (!template) {
+      console.warn('Template de mensagem associado não encontrado: ' + regra.Template);
+      return;
+    }
+
+    const assuntoTemplate = template.Assunto || template.assunto;
+    const corpoTemplate = template.Corpo || template.corpo;
+    if (!assuntoTemplate || !corpoTemplate) return;
+
+    // Obter destinatários com base no Grupo Destinatário da Regra
+    const destinatarios = obterEmailsGrupo(regra.Destinatario, entidadeConectada);
+    
+    destinatarios.forEach(dest => {
+      if (!dest.email || !dest.email.includes('@')) return;
+
+      // Se houver uma entidade de dados vinculada (como dados da inscrição), mescla as tags
+      const dadosMesclados = dest.dados || entidadeConectada || {};
+      const assuntoFinal = applyTags(assuntoTemplate, dadosMesclados);
+      const corpoFinal = applyTags(corpoTemplate, dadosMesclados);
+
+      try {
+        MailApp.sendEmail({
+          to: dest.email,
+          subject: assuntoFinal,
+          body: corpoFinal,
+          name: "Clube Iceberg Kids"
+        });
+        console.log(`Disparo automático (${regra.Nome}) enviado com sucesso para ${dest.email}`);
+      } catch(e) {
+        console.error(`Erro no disparo automático (${regra.Nome}) para ${dest.email}:`, e);
+      }
+    });
+  });
+}
+
+function obterEmailsGrupo(grupo, entidadeConectada) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const list = [];
+
+  const getVal = (obj, key) => {
+    if (!obj) return "";
+    const cleanKey = String(key).trim().toLowerCase();
+    const foundKey = Object.keys(obj).find(k => String(k).trim().toLowerCase() === cleanKey);
+    return foundKey ? String(obj[foundKey]).trim() : "";
+  };
+
+  if (grupo === 'apoiador-especifico' && entidadeConectada) {
+    const email = getVal(entidadeConectada, 'Email') || getVal(entidadeConectada, 'Email Apoiador');
+    if (email) list.push({ email, dados: entidadeConectada });
+    return list;
+  }
+
+  if (grupo === 'todos-apoiadores') {
+    const apoiadores = getSheetData('Apoiadores');
+    apoiadores.forEach(ap => {
+      const email = ap.Email || ap.email;
+      if (email) list.push({ email, dados: ap });
+    });
+    return list;
+  }
+
+  if (grupo === 'diretoria') {
+    const usuarios = getSheetData('Usuarios');
+    usuarios.forEach(u => {
+      const email = u.Email || u.email;
+      if (email) list.push({ email, dados: u });
+    });
+    return list;
+  }
+
+  // Grupos vinculados a aventureiros ativos
+  const inscricoes = getSheetData('Inscricoes');
+  const ativos = inscricoes.filter(i => {
+    const s = String(i.Status || '').trim();
+    const cargo = String(i.Cargo || 'Aventureiro(a)').trim().toLowerCase();
+    const isAtivo = s === 'Aceita' || s === 'Cadastro finalizado' || s === 'Recebida';
+    const isAventureiro = cargo.includes('aventureiro') || cargo === '';
+    return isAtivo && isAventureiro;
+  });
+
+  if (grupo === 'mae') {
+    ativos.forEach(i => {
+      const email = getVal(i, 'Email Mãe') || getVal(i, 'emailMae') || getVal(i, 'motherEmail');
+      if (email) list.push({ email, dados: i });
+    });
+  } else if (grupo === 'pai') {
+    ativos.forEach(i => {
+      const email = getVal(i, 'Email Pai') || getVal(i, 'emailPai') || getVal(i, 'fatherEmail');
+      if (email) list.push({ email, dados: i });
+    });
+  } else if (grupo === 'responsavel') {
+    // Se for para o responsável legal ou fallback do e-mail do aventureiro
+    ativos.forEach(i => {
+      const email = getTargetEmail(i);
+      if (email) list.push({ email, dados: i });
+    });
+  } else if (grupo === 'todos-ativos') {
+    // Todos os e-mails coletados dos aventureiros ativos (mãe + pai + responsável)
+    const emailsUnicos = new Set();
+    ativos.forEach(i => {
+      const emails = [
+        getTargetEmail(i),
+        getVal(i, 'Email Mãe') || getVal(i, 'emailMae') || getVal(i, 'motherEmail'),
+        getVal(i, 'Email Pai') || getVal(i, 'emailPai') || getVal(i, 'fatherEmail')
+      ];
+      emails.forEach(e => {
+        if (e && e.includes('@') && !emailsUnicos.has(e.toLowerCase())) {
+          emailsUnicos.add(e.toLowerCase());
+          list.push({ email: e, dados: i });
+        }
+      });
+    });
+  }
+
+  return list;
+}
+
+// Executar tarefas agendadas quinzenalmente ou disparos periódicos (Último e Primeiro dia útil)
+function triggerVerificacaoDatasUteis() {
+  const hoje = new Date();
+  
+  if (isPrimeiroDiaUtil(hoje)) {
+    processarRegrasAutomaticas('primeiro-dia-util', null);
+  }
+  if (isUltimoDiaUtil(hoje)) {
+    processarRegrasAutomaticas('ultimo-dia-util', null);
+  }
+}
+
+function isPrimeiroDiaUtil(date) {
+  // Retorna true se hoje for o primeiro dia útil do mês (considerando seg-sex)
+  const d = new Date(date.getTime());
+  d.setDate(1);
+  while (d.getDay() === 0 || d.getDay() === 6) {
+    d.setDate(d.getDate() + 1);
+  }
+  return date.getDate() === d.getDate();
+}
+
+function isUltimoDiaUtil(date) {
+  // Retorna true se hoje for o último dia útil do mês (considerando seg-sex)
+  const d = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  while (d.getDay() === 0 || d.getDay() === 6) {
+    d.setDate(d.getDate() - 1);
+  }
+  return date.getDate() === d.getDate();
 }

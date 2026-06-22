@@ -1097,14 +1097,17 @@
 
                 <!-- TAB: MENSAGENS -->
                 <section id="tab-mensagens" class="tab-content hidden space-y-6">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-left">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-left border-b border-outline-variant pb-2">
                         <div>
                             <h2 class="font-headline-lg text-xl font-bold text-primary">Mensagens e E-mails</h2>
-                            <p class="text-sm text-on-surface-variant">Gerencie os modelos de e-mail cadastrados e faça disparos manuais em lote.</p>
+                            <p class="text-sm text-on-surface-variant">Configure os modelos de e-mail e as regras de disparos automáticos.</p>
                         </div>
                         <div class="flex gap-2">
-                            <button type="button" class="btn" onclick="openCreateMensagem()">
+                            <button type="button" id="btn-nova-mensagem" class="btn" onclick="openCreateMensagem()">
                                 <span class="material-symbols-outlined">add</span> Novo Modelo
+                            </button>
+                            <button type="button" id="btn-nova-regra" class="btn bg-purple-600 hover:bg-purple-700 text-white hidden" onclick="openCreateRegra()">
+                                <span class="material-symbols-outlined">rule</span> Nova Regra
                             </button>
                             <button type="button" class="btn btn-outline" onclick="openBulkEmailModal()">
                                 <span class="material-symbols-outlined">send</span> Enviar E-mail (Lote)
@@ -1112,20 +1115,52 @@
                         </div>
                     </div>
 
-                    <div class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant shadow-sm space-y-4">
-                        <div class="overflow-x-auto w-full">
-                            <table class="w-full text-left border-collapse" id="table-mensagens">
-                                <thead>
-                                    <tr>
-                                        <th>Gatilho / ID</th>
-                                        <th>Assunto</th>
-                                        <th>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbody-mensagens">
-                                    <!-- Rendered dynamically by admin.js -->
-                                </tbody>
-                            </table>
+                    <!-- Sub-tabs do painel de mensagens -->
+                    <div class="flex border-b border-outline-variant flex-wrap gap-0">
+                        <button type="button" id="subtab-btn-mensagens" class="px-5 py-2.5 border-b-2 border-primary text-primary font-bold text-sm transition-all" onclick="switchMensagensSubTab('modelos')">Modelos de Mensagem</button>
+                        <button type="button" id="subtab-btn-regras" class="px-5 py-2.5 border-b-2 border-transparent text-on-surface-variant hover:text-primary font-bold text-sm transition-all" onclick="switchMensagensSubTab('regras')">Regras de Disparo Automático</button>
+                    </div>
+
+                    <!-- Conteúdo: Modelos de Mensagem -->
+                    <div id="subtab-content-modelos" class="space-y-4">
+                        <div class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant shadow-sm space-y-4">
+                            <div class="overflow-x-auto w-full">
+                                <table class="w-full text-left border-collapse" id="table-mensagens">
+                                    <thead>
+                                        <tr>
+                                            <th>Gatilho / ID</th>
+                                            <th>Assunto</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-mensagens">
+                                        <!-- Rendered dynamically by admin.js -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Conteúdo: Regras de Disparo Automático -->
+                    <div id="subtab-content-regras" class="hidden space-y-4">
+                        <div class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant shadow-sm space-y-4">
+                            <div class="overflow-x-auto w-full">
+                                <table class="w-full text-left border-collapse" id="table-regras">
+                                    <thead>
+                                        <tr>
+                                            <th>Nome da Regra</th>
+                                            <th>Gatilho</th>
+                                            <th>Grupo Destinatário</th>
+                                            <th>Modelo a Enviar</th>
+                                            <th>Status</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-regras">
+                                        <!-- Rendered dynamically by admin.js -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -1180,7 +1215,7 @@
  
     <!-- Modal Cadastro/Edição de Mensagem -->
     <div id="modal-mensagem" class="modal-overlay hidden">
-        <div class="modal-content !max-w-xl">
+        <div class="modal-content !max-w-xl" style="max-height: 90vh; overflow-y: auto;">
             <h3 id="modal-mensagem-title">Modelo de Mensagem</h3>
             <form id="form-mensagem">
                 <input type="hidden" id="msg-mode" value="create">
@@ -1213,7 +1248,64 @@
         </div>
     </div>
 
-    <!-- Modal Envio em Lote (Bulk Email) -->
+    <!-- Modal Cadastro/Edição de Regra de Disparo -->
+    <div id="modal-regra" class="modal-overlay hidden">
+        <div class="modal-content !max-w-xl" style="max-height: 90vh; overflow-y: auto;">
+            <h3 id="modal-regra-title">Regra de Disparo Automático</h3>
+            <form id="form-regra">
+                <input type="hidden" id="regra-row-id">
+                <input type="hidden" id="regra-mode" value="create">
+                
+                <div class="input-group">
+                    <label>Nome da Regra *</label>
+                    <input type="text" id="regra-nome" required placeholder="Ex: Boas-vindas inscrições, Cobrança mensalidade...">
+                </div>
+
+                <div class="input-group">
+                    <label>Gatilho (Quando disparar?) *</label>
+                    <select id="regra-gatilho" required>
+                        <option value="ao-inscrever">Ao realizar uma nova inscrição (Cadastro Inicial)</option>
+                        <option value="primeiro-dia-util">No primeiro dia útil do mês</option>
+                        <option value="ultimo-dia-util">No último dia útil do mês</option>
+                        <option value="novo-apoiador">Quando um novo apoiador é lançado no hall</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label>Grupo Destinatário (Quem vai receber?) *</label>
+                    <select id="regra-destinatario" required>
+                        <option value="mae">E-mail das Mães (Aventureiros ativos)</option>
+                        <option value="pai">E-mail dos Pais (Aventureiros ativos)</option>
+                        <option value="responsavel">E-mail dos Responsáveis Legais (Aventureiros ativos)</option>
+                        <option value="diretoria">E-mail dos membros da Diretoria cadastrada</option>
+                        <option value="apoiador-especifico">E-mail do apoiador inserido (Somente no gatilho de Novo Apoiador)</option>
+                        <option value="todos-apoiadores">Todos os apoiadores cadastrados</option>
+                        <option value="todos-ativos">Todos os aventureiros/membros ativos</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label>Modelo de Mensagem associado *</label>
+                    <select id="regra-template" required>
+                        <!-- Populated dynamically by admin.js -->
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label>Status da Regra *</label>
+                    <select id="regra-status" required>
+                        <option value="Ativa">Ativa</option>
+                        <option value="Inativa">Inativa</option>
+                    </select>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-regra')">Cancelar</button>
+                    <button type="submit" class="btn">Salvar Regra</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <div id="modal-bulk-email" class="modal-overlay hidden">
         <div class="modal-content !max-w-xl">
             <h3>Enviar E-mail em Lote</h3>
