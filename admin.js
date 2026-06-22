@@ -2324,10 +2324,29 @@ function openAdimplenciaModal() {
     aventureirosAtivos.forEach(av => {
         const nome = String(av['Nome Criança'] || '').trim();
         if (!nome) return;
+
+        // Se o aventureiro pagou a mensalidade do mês atual, está em dia (adimplente)
         if (pagantesMensalidade.has(nome.toLowerCase())) {
             adimplentesMensalidade.push(nome);
         } else {
-            inadimplentesMensalidade.push(nome);
+            // Se não pagou, verifica a data em que fez a inscrição
+            let isMêsDeInscrição = false;
+            if (av.Data) {
+                const dataInsc = new Date(av.Data);
+                if (!isNaN(dataInsc.getTime())) {
+                    // Se a inscrição foi feita no ano atual e no mês atual
+                    if (dataInsc.getFullYear() === currentYear && dataInsc.getMonth() === currentMonth) {
+                        isMêsDeInscrição = true;
+                    }
+                }
+            }
+            
+            // Se for o mês da inscrição, ele está isento da mensalidade (adimplente)
+            if (isMêsDeInscrição) {
+                adimplentesMensalidade.push(nome + " (Isento - Mês Inscrição)");
+            } else {
+                inadimplentesMensalidade.push(nome);
+            }
         }
     });
 
@@ -2353,11 +2372,21 @@ function openAdimplenciaModal() {
                 const nome = String(f.Crianca || f.ResponsavelDoador || '').trim();
                 if (pagamentosPorNome[nome] !== undefined) {
                     pagamentosPorNome[nome].add(d.getUTCMonth());
-                } else {
-                    // aventureiro pode ter pago mas não está mais ativo - ignorar
                 }
             }
         });
+
+    // Mapeia data de inscrição de cada aventureiro para facilitar o acesso na tabela
+    const datasInscricaoPorNome = {};
+    aventureirosAtivos.forEach(av => {
+        const nome = String(av['Nome Criança'] || '').trim();
+        if (nome && av.Data) {
+            const d = new Date(av.Data);
+            if (!isNaN(d.getTime())) {
+                datasInscricaoPorNome[nome] = d;
+            }
+        }
+    });
 
     // Renderizar tabela do ano
     const thead = document.querySelector('#table-adimplencia-ano thead tr');
@@ -2375,7 +2404,23 @@ function openAdimplenciaModal() {
             const pagos = pagamentosPorNome[nome] || new Set();
             const cells = mesesDoAno.map(m => {
                 const pago = pagos.has(m);
-                return `<td class="px-2 py-1.5 text-center"><span class="inline-flex items-center justify-center w-7 h-7 rounded-full text-[11px] font-bold ${ pago ? 'bg-green-200 text-green-800' : 'bg-red-100 text-red-700' }">${ pago ? '✓' : '✗'}</span></td>`;
+                
+                // Determina se o mês m é anterior ou igual ao mês de inscrição (isento da mensalidade)
+                let isento = false;
+                const dataInsc = datasInscricaoPorNome[nome];
+                if (dataInsc && dataInsc.getFullYear() === currentYear) {
+                    if (m <= dataInsc.getMonth()) {
+                        isento = true;
+                    }
+                }
+                
+                if (pago) {
+                    return `<td class="px-2 py-1.5 text-center"><span class="inline-flex items-center justify-center w-7 h-7 rounded-full text-[11px] font-bold bg-green-200 text-green-800" title="Pago">✓</span></td>`;
+                } else if (isento) {
+                    return `<td class="px-2 py-1.5 text-center"><span class="inline-flex items-center justify-center w-7 h-7 rounded-full text-[11px] font-bold bg-gray-200 text-gray-500" title="Isento (Mês da Inscrição ou anterior)">—</span></td>`;
+                } else {
+                    return `<td class="px-2 py-1.5 text-center"><span class="inline-flex items-center justify-center w-7 h-7 rounded-full text-[11px] font-bold bg-red-100 text-red-700" title="Pendente">✗</span></td>`;
+                }
             }).join('');
             return `<tr class="${idx % 2 === 0 ? 'bg-white' : 'bg-surface-container-lowest'}">
                 <td class="px-3 py-1.5 font-medium text-on-surface sticky left-0 ${idx % 2 === 0 ? 'bg-white' : 'bg-surface-container-lowest'}">${nome}</td>
