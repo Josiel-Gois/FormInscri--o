@@ -1153,7 +1153,7 @@ document.getElementById('form-edit-status').addEventListener('submit', async (e)
         action: 'updateStatus', 
         row: document.getElementById('edit-row-id').value, 
         status: document.getElementById('edit-status').value, 
-        cargo: document.getElementById('edit-cargo').value === 'Aventureiro(a)' ? 'Aventureiro' : document.getElementById('edit-cargo').value,
+        cargo: document.getElementById('edit-cargo').value, // Salva o valor completo 'Aventureiro(a)'
         FotoBase64: fotoBase64
     });
     closeModal('modal-edit-status');
