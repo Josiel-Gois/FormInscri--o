@@ -430,6 +430,8 @@ function handleSaveMensagem(payload) {
 function applyTags(text, dataInscricao) {
   if (!text) return '';
   let msg = text;
+  
+  // Tags de Inscrição / Membro
   const nameVal = dataInscricao['Nome Criança'] || dataInscricao['childName'] || 'Membro';
   msg = msg.replace(/\{\{Nome Criança\}\}/g, nameVal);
   msg = msg.replace(/\{\{Nome Membro\}\}/g, nameVal);
@@ -437,6 +439,15 @@ function applyTags(text, dataInscricao) {
   msg = msg.replace(/\{\{Nome do Adulto\}\}/g, nameVal);
   msg = msg.replace(/\{\{Nome Responsável\}\}/g, dataInscricao['Nome Pai'] || dataInscricao['fatherName'] || dataInscricao['Nome Mãe'] || 'Responsável');
   msg = msg.replace(/\{\{Classe\}\}/g, dataInscricao['Classe'] || dataInscricao['classe'] || '');
+  
+  // Tags de Apoiador
+  const nomeApoiador = dataInscricao['Nome do Apoiador'] || dataInscricao['nome'] || dataInscricao['Nome'] || '';
+  const empresaApoiador = dataInscricao['Empresa/Detalhe'] || dataInscricao['detalhe'] || dataInscricao['Detalhe'] || dataInscricao['empresa'] || '';
+  const telefoneApoiador = dataInscricao['Telefone'] || dataInscricao['telefone'] || '';
+  msg = msg.replace(/\{\{Nome Apoiador\}\}/g, nomeApoiador);
+  msg = msg.replace(/\{\{Empresa Apoiador\}\}/g, empresaApoiador);
+  msg = msg.replace(/\{\{Telefone Apoiador\}\}/g, telefoneApoiador);
+  
   return msg;
 }
 
