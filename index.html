@@ -681,13 +681,36 @@ Abrir no Google Maps
             .catch(err => console.error("Prefetch Instagram failed:", err));
     }
 
+    let autoScrollInterval = null;
+    function startInstagramAutoScroll() {
+        const carousel = document.getElementById('insta-carousel');
+        if (!carousel) return;
+        
+        if (autoScrollInterval) clearInterval(autoScrollInterval);
+        
+        autoScrollInterval = setInterval(() => {
+            if (carousel.scrollWidth > carousel.clientWidth) {
+                // Se chegou ao final, volta pro início
+                const isAtEnd = carousel.scrollLeft + carousel.clientWidth >= carousel.scrollWidth - 15;
+                if (isAtEnd) {
+                    carousel.scrollTo({ left: 0, behavior: 'smooth' });
+                } else {
+                    const cardWidth = 320 + 24; // largura do card + gap
+                    carousel.scrollBy({ left: cardWidth, behavior: 'smooth' });
+                }
+            }
+        }, 4000);
+    }
+
     function renderInstagramCarousel(data) {
         const carousel = document.getElementById('insta-carousel');
         if (!carousel) return;
         if (!data || data.length === 0) return;
 
         carousel.innerHTML = '';
-        data.forEach(post => {
+        // Inverte para mostrar as postagens mais recentes primeiro
+        const reversedData = [...data].reverse();
+        reversedData.forEach(post => {
             const link = post['Link do Post'] || post.link || 'https://www.instagram.com/clubeicebergkids/';
             const legenda = post['Legenda'] || post.legenda || 'Aventura gigante no Iceberg Kids!';
             const imgUrl = post['URL da Imagem'] || post.imagem || 'acampamento.png';
@@ -707,6 +730,17 @@ Abrir no Google Maps
                 </div>
             `;
             carousel.appendChild(card);
+        });
+
+        // Inicia o auto-scroll e configura eventos de pausa no hover
+        startInstagramAutoScroll();
+        
+        carousel.addEventListener('mouseenter', () => {
+            if (autoScrollInterval) clearInterval(autoScrollInterval);
+        });
+        
+        carousel.addEventListener('mouseleave', () => {
+            startInstagramAutoScroll();
         });
     }
 
