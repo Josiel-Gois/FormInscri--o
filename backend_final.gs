@@ -133,7 +133,12 @@ function doGet(e) {
   if (action === 'getInstagram') return jsonResponse(getSheetData('Instagram'));
   
   if (action === 'checkStatus') {
-    const nomePaiQuery = String(e.parameter.nomePai || '').trim().toLowerCase();
+    // Normaliza a string removendo acentos e espaços extras para comparação
+    const normalizar = (str) => {
+      return String(str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+    };
+
+    const nomePaiQuery = normalizar(e.parameter.nomePai);
     if (!nomePaiQuery) {
       return jsonResponse({ success: false, error: 'Nome do responsável não fornecido.' });
     }
@@ -148,11 +153,35 @@ function doGet(e) {
 
     const resultados = [];
     inscricoes.forEach(i => {
-      const resp = getVal(i, 'Nome Responsável') || getVal(i, 'Nome Pai') || getVal(i, 'Nome Mãe') || getVal(i, 'fatherName') || getVal(i, 'motherName') || '';
-      const emailResp = getVal(i, 'Email Responsável') || getVal(i, 'Email Mãe') || getVal(i, 'Email Pai') || '';
+      // Coleta todas as strings possíveis de nome e e-mail na linha da inscrição
+      const camposResponsavel = [
+        getVal(i, 'Nome Responsável'),
+        getVal(i, 'Nome Pai'),
+        getVal(i, 'Nome Mãe'),
+        getVal(i, 'Nome Criança'),
+        getVal(i, 'Nome Completo'),
+        getVal(i, 'Nome'),
+        getVal(i, 'Crianca'),
+        getVal(i, 'childName'),
+        getVal(i, 'NomeResponsavel'),
+        getVal(i, 'Responsavel'),
+        getVal(i, 'Pai'),
+        getVal(i, 'Mãe'),
+        getVal(i, 'Mae'),
+        getVal(i, 'fatherName'),
+        getVal(i, 'motherName'),
+        getVal(i, 'Email Responsável'),
+        getVal(i, 'Email Mãe'),
+        getVal(i, 'Email Pai'),
+        getVal(i, 'Email')
+      ];
       
-      // Busca pelo nome completo ou parcial de forma insensível a maiúsculas/minúsculas
-      if (resp.toLowerCase().includes(nomePaiQuery) || emailResp.toLowerCase().includes(nomePaiQuery)) {
+      // Verifica se a query do usuário bate com qualquer um dos campos normalizados
+      const bateu = camposResponsavel.some(campo => {
+        return normalizar(campo).includes(nomePaiQuery);
+      });
+
+      if (bateu) {
         resultados.push({
           crianca: getVal(i, 'Nome Criança') || getVal(i, 'childName') || getVal(i, 'Nome Completo') || 'Não informado',
           status: getVal(i, 'Status') || 'Recebida',
