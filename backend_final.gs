@@ -4,13 +4,23 @@
 
 function setupSheets() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheets = ['Inscricoes', 'Usuarios', 'Apoiadores', 'Atividades', 'Apontamentos', 'Calendario', 'Financeiro', 'Mensagens', 'Regras', 'LogsEmails'];
+  const sheets = ['Inscricoes', 'Usuarios', 'Apoiadores', 'Atividades', 'Apontamentos', 'Calendario', 'Financeiro', 'Mensagens', 'Regras', 'LogsEmails', 'Instagram'];
   
   sheets.forEach(name => {
     if (!ss.getSheetByName(name)) {
       ss.insertSheet(name);
     }
   });
+
+  // Criar cabeçalho da aba Instagram se estiver vazia
+  const instaSheet = ss.getSheetByName('Instagram');
+  if (instaSheet.getLastRow() === 0) {
+    instaSheet.appendRow(['ID', 'Link do Post', 'Legenda', 'URL da Imagem']);
+    // Adiciona 3 posts mockados iniciais
+    instaSheet.appendRow(['POST_1', 'https://www.instagram.com/clubeicebergkids/', '❄️ Mais um dia de aventuras gigantes! Nossos pequenos aventureiros aprendendo lições incríveis sobre amizade e coragem.', '1.jpeg']);
+    instaSheet.appendRow(['POST_2', 'https://www.instagram.com/clubeicebergkids/', '⛺ Acampamento Iceberg Kids! Cada detalhe preparado para que a infância deles seja guardada como o melhor tesouro.', '2.jpeg']);
+    instaSheet.appendRow(['POST_3', 'https://www.instagram.com/clubeicebergkids/', '🎨 O aprendizado prático estimula a criatividade! Nossos clubes de artes ajudando a moldar os talentos das crianças.', '3.jpeg']);
+  }
 
   // Criar cabeçalho da aba LogsEmails se estiver vazia
   const logsSheet = ss.getSheetByName('LogsEmails');
@@ -120,6 +130,39 @@ function doGet(e) {
 
   if (action === 'getApoiadores') return jsonResponse(getSheetData('Apoiadores'));
   if (action === 'getCalendario') return jsonResponse(getSheetData('Calendario'));
+  if (action === 'getInstagram') return jsonResponse(getSheetData('Instagram'));
+  
+  if (action === 'checkStatus') {
+    const nomePaiQuery = String(e.parameter.nomePai || '').trim().toLowerCase();
+    if (!nomePaiQuery) {
+      return jsonResponse({ success: false, error: 'Nome do responsável não fornecido.' });
+    }
+    
+    const inscricoes = getSheetData('Inscricoes');
+    const getVal = (obj, key) => {
+      if (!obj) return "";
+      const cleanKey = String(key).trim().toLowerCase();
+      const foundKey = Object.keys(obj).find(k => String(k).trim().toLowerCase() === cleanKey);
+      return foundKey ? String(obj[foundKey]).trim() : "";
+    };
+
+    const resultados = [];
+    inscricoes.forEach(i => {
+      const resp = getVal(i, 'Nome Responsável') || getVal(i, 'Nome Pai') || getVal(i, 'Nome Mãe') || getVal(i, 'fatherName') || getVal(i, 'motherName') || '';
+      const emailResp = getVal(i, 'Email Responsável') || getVal(i, 'Email Mãe') || getVal(i, 'Email Pai') || '';
+      
+      // Busca pelo nome completo ou parcial de forma insensível a maiúsculas/minúsculas
+      if (resp.toLowerCase().includes(nomePaiQuery) || emailResp.toLowerCase().includes(nomePaiQuery)) {
+        resultados.push({
+          crianca: getVal(i, 'Nome Criança') || getVal(i, 'childName') || getVal(i, 'Nome Completo') || 'Não informado',
+          status: getVal(i, 'Status') || 'Recebida',
+          cargo: getVal(i, 'Cargo') || getVal(i, 'TipoInscricao') || 'Aventureiro'
+        });
+      }
+    });
+
+    return jsonResponse({ success: true, count: resultados.length, resultados: resultados });
+  }
   
   if (action === 'getAllData') {
     return jsonResponse({
@@ -132,7 +175,8 @@ function doGet(e) {
       financeiro: getSheetData('Financeiro'),
       mensagens: getSheetData('Mensagens'),
       regras: getSheetData('Regras'),
-      logsEmails: getSheetData('LogsEmails')
+      logsEmails: getSheetData('LogsEmails'),
+      instagram: getSheetData('Instagram')
     });
   }
 
@@ -194,6 +238,9 @@ function doPost(e) {
     if (action === 'updateFinanceiro') {
       return jsonResponse(handleSaveFinanceiro(payload));
     }
+    if (action === 'saveInstagram') {
+      return jsonResponse(handleSaveInstagram(payload));
+    }
 
     // REGRAS
     if (action === 'saveRegra') return jsonResponse(handleSaveRegra(payload));
@@ -208,12 +255,99 @@ function doPost(e) {
     if (action === 'addApontamento') return jsonResponse(appendData('Apontamentos', [payload.data, payload.nome, payload.pontualidade, payload.material, payload.uniforme, payload.lenco, payload.participativo, payload.obs]));
     if (action === 'addCalendario') return jsonResponse(appendData('Calendario', [payload.dataEvento, payload.evento, payload.categoria, payload.detalhes]));
     if (action === 'addFinanceiro') return jsonResponse(handleSaveFinanceiro(payload));
+    if (action === 'addInstagram') return jsonResponse(handleSaveInstagram(payload));
     
   } catch (error) {
     return jsonResponse({ error: error.message }, 500);
   }
 
   return jsonResponse({ error: 'Ação POST não reconhecida' }, 400);
+}
+
+function handleSaveInstagram(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Instagram');
+  if (!sheet) throw new Error('Aba Instagram não encontrada.');
+
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['ID', 'Link do Post', 'Legenda', 'URL da Imagem']);
+  }
+
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const source = payload.data || payload;
+  const idVal = source.id || payload.id || 'POST_' + new Date().getTime();
+  const linkVal = source.link || source['Link do Post'] || '';
+  
+  let legendaVal = source.legenda || source['Legenda'] || '';
+  let imagemVal = source.imagem || source['URL da Imagem'] || '';
+
+  // Se for uma edição e não for enviado upload de foto, mantém a imagem que já estava cadastrada
+  if (payload.row) {
+    const r = parseInt(payload.row, 10);
+    const imgColIdx = headers.findIndex(h => String(h).trim().toLowerCase().includes('imagem') || String(h).trim().toLowerCase().includes('url'));
+    const legColIdx = headers.findIndex(h => String(h).trim().toLowerCase().includes('legenda'));
+    if (imgColIdx !== -1 && !imagemVal) {
+      imagemVal = sheet.getRange(r, imgColIdx + 1).getValue();
+    }
+    if (legColIdx !== -1 && !legendaVal) {
+      legendaVal = sheet.getRange(r, legColIdx + 1).getValue();
+    }
+  }
+
+  // Tenta extrair a legenda automaticamente via API de OEmbed do Instagram se link for válido e legenda estiver vazia
+  if (linkVal && linkVal.includes('instagram.com') && (!legendaVal || legendaVal.trim() === '')) {
+    try {
+      const urlFetch = "https://iframe.ly/api/oembed?url=" + encodeURIComponent(linkVal); // Iframe.ly para fallback simples ou oembed do instagram público
+      const response = UrlFetchApp.fetch(urlFetch, { muteHttpExceptions: true });
+      if (response.getResponseCode() === 200) {
+        const json = JSON.parse(response.getContentText());
+        // A legenda geralmente vem no campo 'title' do oembed
+        if (json.title) {
+          legendaVal = String(json.title).replace(/Clube de Aventureiros Iceberg Kids on Instagram: /gi, "").replace(/on Instagram: /gi, "").trim();
+        }
+      }
+    } catch(err) {
+      console.error("Falha ao tentar extrair dados do post de forma automatica: " + err.message);
+    }
+  }
+  
+  // Se mesmo após a tentativa de extração a legenda continuar vazia, usa uma padrão amigável
+  if (!legendaVal || legendaVal.trim() === '') {
+    legendaVal = "❄️ Acompanhe as aventuras gigantes do Clube Iceberg Kids em nosso Instagram!";
+  }
+
+  // Se receber uma imagem em Base64 do upload, salva ela no Google Drive
+  const base64Data = payload.fotoBase64 || payload.imagemBase64 || source.fotoBase64 || source.imagemBase64 || '';
+  if (base64Data && base64Data.includes('base64,')) {
+    try {
+      const url = saveFileToDrive(base64Data, idVal, 'Instagram');
+      imagemVal = url;
+    } catch(e) {
+      imagemVal = 'Erro Upload';
+    }
+  }
+
+  const rowData = new Array(headers.length).fill('');
+  headers.forEach((h, index) => {
+    const cleanH = String(h).trim().toLowerCase();
+    if (cleanH === 'id') {
+      rowData[index] = idVal;
+    } else if (cleanH.includes('link')) {
+      rowData[index] = linkVal;
+    } else if (cleanH.includes('legenda')) {
+      rowData[index] = legendaVal;
+    } else if (cleanH.includes('imagem') || cleanH.includes('url')) {
+      rowData[index] = imagemVal;
+    }
+  });
+
+  if (payload.row) {
+    const r = parseInt(payload.row, 10);
+    sheet.getRange(r, 1, 1, rowData.length).setValues([rowData]);
+  } else {
+    sheet.appendRow(rowData);
+  }
+  return { success: true };
 }
 
 // ---------------------- CORE FUNCTIONS ----------------------
@@ -438,19 +572,30 @@ function applyTags(text, dataInscricao) {
   if (!text) return '';
   let msg = text;
   
+  // Função auxiliar para buscar valor no objeto de forma case-insensitive
+  const getVal = (obj, key) => {
+    if (!obj) return "";
+    const cleanKey = String(key).trim().toLowerCase();
+    const foundKey = Object.keys(obj).find(k => String(k).trim().toLowerCase() === cleanKey);
+    return foundKey ? String(obj[foundKey]).trim() : "";
+  };
+
   // Tags de Inscrição / Membro
-  const nameVal = dataInscricao['Nome Criança'] || dataInscricao['childName'] || 'Membro';
+  const nameVal = getVal(dataInscricao, 'Nome Criança') || getVal(dataInscricao, 'childName') || getVal(dataInscricao, 'Nome Completo') || 'Membro';
   msg = msg.replace(/\{\{Nome Criança\}\}/gi, nameVal);
   msg = msg.replace(/\{\{Nome Membro\}\}/gi, nameVal);
   msg = msg.replace(/\{\{Nome Lider\}\}/gi, nameVal);
   msg = msg.replace(/\{\{Nome do Adulto\}\}/gi, nameVal);
-  msg = msg.replace(/\{\{Nome Responsável\}\}/gi, dataInscricao['Nome Pai'] || dataInscricao['fatherName'] || dataInscricao['Nome Mãe'] || 'Responsável');
-  msg = msg.replace(/\{\{Classe\}\}/gi, dataInscricao['Classe'] || dataInscricao['classe'] || '');
+  
+  const respVal = getVal(dataInscricao, 'Nome Responsável') || getVal(dataInscricao, 'Nome Pai') || getVal(dataInscricao, 'fatherName') || getVal(dataInscricao, 'Nome Mãe') || 'Responsável';
+  msg = msg.replace(/\{\{Nome Responsável\}\}/gi, respVal);
+  msg = msg.replace(/\{\{Classe\}\}/gi, getVal(dataInscricao, 'Classe') || '');
   
   // Tags de Apoiador
-  const nomeApoiador = dataInscricao['Nome do Apoiador'] || dataInscricao['nome'] || dataInscricao['Nome'] || '';
-  const empresaApoiador = dataInscricao['Empresa/Detalhe'] || dataInscricao['detalhe'] || dataInscricao['Detalhe'] || dataInscricao['empresa'] || '';
-  const telefoneApoiador = dataInscricao['Telefone'] || dataInscricao['telefone'] || '';
+  const nomeApoiador = getVal(dataInscricao, 'Nome do Apoiador') || getVal(dataInscricao, 'nome') || getVal(dataInscricao, 'Nome') || '';
+  const empresaApoiador = getVal(dataInscricao, 'Empresa/Detalhe') || getVal(dataInscricao, 'detalhe') || getVal(dataInscricao, 'Detalhe') || getVal(dataInscricao, 'empresa') || '';
+  const telefoneApoiador = getVal(dataInscricao, 'Telefone') || getVal(dataInscricao, 'telefone') || '';
+  
   msg = msg.replace(/\{\{Nome Apoiador\}\}/gi, nomeApoiador);
   msg = msg.replace(/\{\{Empresa Apoiador\}\}/gi, empresaApoiador);
   msg = msg.replace(/\{\{Telefone Apoiador\}\}/gi, telefoneApoiador);

@@ -536,6 +536,10 @@
                     <span class="material-symbols-outlined">mail</span>
                     <span>Mensagens</span>
                 </li>
+                <li data-tab="tab-instagram">
+                    <span class="material-symbols-outlined">photo_camera</span>
+                    <span>Feed Instagram</span>
+                </li>
             </nav>
             
             <!-- Footer -->
@@ -1184,6 +1188,40 @@
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB: INSTAGRAM -->
+                <section id="tab-instagram" class="tab-content hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-left border-b border-outline-variant pb-2">
+                        <div>
+                            <h2 class="font-headline-lg text-xl font-bold text-primary">Gerenciar Feed Instagram</h2>
+                            <p class="text-sm text-on-surface-variant">Configure os 3 links e fotos que aparecem na página inicial do clube.</p>
+                        </div>
+                        <div>
+                            <button type="button" class="btn" onclick="openCreateInstagram()">
+                                <span class="material-symbols-outlined">add</span> Nova Postagem
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant shadow-sm space-y-4 text-left">
+                        <div class="overflow-x-auto w-full">
+                            <table class="w-full text-left border-collapse" id="table-instagram">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Link do Post</th>
+                                        <th>Legenda</th>
+                                        <th>URL da Imagem</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-instagram">
+                                    <!-- Rendered dynamically by admin.js -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </section>
@@ -2051,6 +2089,42 @@
             <h3 class="text-xl font-bold text-on-surface mb-2" style="color: var(--dark);">Acesso Restrito</h3>
             <p class="text-sm text-outline mb-6" style="color: var(--text); margin-bottom: 20px;">Você não tem acesso, solicite acesso ao administrador.</p>
             <button class="btn w-full" style="width: 100%;" onclick="closeModal('modal-acesso-negado')">Entendido</button>
+        </div>
+    </div>
+
+    <!-- Modal Instagram Post (CRUD) -->
+    <div id="modal-instagram" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 id="modal-instagram-title" style="margin:0;">Nova Postagem do Instagram</h3>
+                <button type="button" onclick="closeModal('modal-instagram')" class="text-on-surface-variant hover:text-error">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <form id="form-instagram">
+                <input type="hidden" id="instagram-row-id">
+                <input type="hidden" id="instagram-mode">
+                <div class="input-group">
+                    <label for="instagram-id">ID do Post</label>
+                    <input type="text" id="instagram-id" required placeholder="Ex: POST_1" class="w-full">
+                </div>
+                <div class="input-group">
+                    <label for="instagram-link">Link da Postagem</label>
+                    <input type="url" id="instagram-link" required placeholder="https://www.instagram.com/p/..." class="w-full">
+                </div>
+                <div class="input-group">
+                    <label for="instagram-legenda">Legenda do Carrossel (Deixe vazio para extrair automático do post)</label>
+                    <textarea id="instagram-legenda" placeholder="Escreva uma breve legenda ou deixe em branco..." rows="3" class="w-full"></textarea>
+                </div>
+                <div class="input-group">
+                    <label for="instagram-imagem">Upload da Imagem (Carrossel)</label>
+                    <input type="file" id="instagram-imagem" accept="image/*" class="w-full">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-instagram')">Cancelar</button>
+                    <button type="submit" class="btn">Salvar Postagem</button>
+                </div>
+            </form>
         </div>
     </div>
 

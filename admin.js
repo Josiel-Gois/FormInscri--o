@@ -7,7 +7,8 @@ let appData = {
     apontamentos: [],
     atividades: [],
     apoiadores: [],
-    calendario: []
+    calendario: [],
+    instagram: []
 };
 
 let currentEditImagens = [];
@@ -475,6 +476,7 @@ async function loadAllData() {
         appData.mensagens = allData.mensagens || [];
         appData.regras = allData.regras || [];
         appData.logsEmails = allData.logsEmails || [];
+        appData.instagram = allData.instagram || [];
         
         populateChildDropdown();
         
@@ -488,6 +490,7 @@ async function loadAllData() {
         renderUsuarios();
         if (typeof renderMensagens === 'function') renderMensagens();
         if (typeof renderRegras === 'function') renderRegras();
+        if (typeof renderInstagram === 'function') renderInstagram();
     } catch (error) {
         console.error("Erro ao carregar dados", error);
     }
@@ -2796,17 +2799,37 @@ function renderLogsEmails() {
     
     sortedLogs.forEach(log => {
         const row = document.createElement('tr');
-        // Trata a data se for objeto Date ou String ISO
-        let dateVal = log.Data || '';
-        if (dateVal && dateVal.includes && dateVal.includes('T')) {
+        
+        let dateVal = log.Data || log.data || '';
+        // Se a data vier no formato ISO 1899-12-30 ou 1899-12-31, o Sheets a enviou por engano (geralmente interpretando apenas hora).
+        if (dateVal && typeof dateVal === 'string' && dateVal.includes('1899-12-')) {
+            dateVal = '';
+        }
+        
+        if (dateVal && typeof dateVal === 'string' && dateVal.includes('T')) {
             try {
-                dateVal = new Date(dateVal).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+                const dateObj = new Date(dateVal);
+                if (!isNaN(dateObj.getTime())) {
+                    dateVal = dateObj.toLocaleDateString('pt-BR');
+                }
+            } catch(e) {}
+        }
+        
+        let timeVal = log.Horario || log.horario || '';
+        // Se o horário vier como ISO completo, exibe apenas a porção da hora
+        if (timeVal && typeof timeVal === 'string' && timeVal.includes('T')) {
+            try {
+                const dateObj = new Date(timeVal);
+                if (!isNaN(dateObj.getTime())) {
+                    // Se o ano for 1899, pegamos apenas a hora formatada
+                    timeVal = dateObj.toLocaleTimeString('pt-BR');
+                }
             } catch(e) {}
         }
         
         row.innerHTML = `
             <td>${dateVal}</td>
-            <td>${log.Horario || log.horario || ''}</td>
+            <td>${timeVal}</td>
             <td>${log['Destinatario Email'] || log.destinatario || ''}</td>
             <td>${log['Modelo/ID Mensagem'] || log.template || ''}</td>
             <td><span class="px-2 py-0.5 rounded text-[10px] font-bold ${String(log['Tipo de Disparo']).includes('Manual') ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}">${log['Tipo de Disparo'] || ''}</span></td>
@@ -3189,4 +3212,158 @@ document.addEventListener('DOMContentLoaded', () => {
             showLoader(false);
         });
     }
+
+    // Submit Instagram Post Form
+    const formInstagram = document.getElementById('form-instagram');
+    if (formInstagram) {
+        formInstagram.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoader(true);
+
+            const rowVal = document.getElementById('instagram-row-id').value;
+            const mode = document.getElementById('instagram-mode').value;
+            const id = document.getElementById('instagram-id').value;
+            const link = document.getElementById('instagram-link').value;
+            const legenda = document.getElementById('instagram-legenda').value;
+            const fileInput = document.getElementById('instagram-imagem');
+
+            let fotoBase64 = '';
+            if (fileInput && fileInput.files.length > 0) {
+                try {
+                    // Utiliza o compressor local para otimizar espaço de upload
+                    fotoBase64 = await compressImage(fileInput.files[0], 600, 600, 0.7);
+                } catch (err) {
+                    console.error("Erro ao processar imagem", err);
+                }
+            }
+
+            try {
+                await fetchPOST({
+                    action: 'saveInstagram',
+                    row: rowVal ? parseInt(rowVal, 10) : null,
+                    fotoBase64: fotoBase64,
+                    data: { id, link, legenda }
+                });
+                closeModal('modal-instagram');
+                formInstagram.reset();
+                setTimeout(loadAllData, 1000);
+            } catch (err) {
+                console.error(err);
+                alert('Erro ao salvar postagem do Instagram.');
+            }
+            showLoader(false);
+        });
+    }
 });
+
+// ================= GESTÃO DO FEED DO INSTAGRAM =================
+
+function renderInstagram() {
+    const tbody = document.getElementById('tbody-instagram');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const posts = appData.instagram || [];
+    if (posts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center font-bold py-4">Nenhuma postagem cadastrada para o carrossel.</td></tr>';
+        return;
+    }
+
+    posts.forEach(post => {
+        const row = document.createElement('tr');
+        
+        // Dados das colunas
+        const idVal = post.ID || post.id || '';
+        const linkVal = post['Link do Post'] || post.link || '';
+        const legendaVal = post['Legenda'] || post.legenda || '';
+        const imagemVal = post['URL da Imagem'] || post.imagem || '';
+        const rowNum = post._row;
+
+        row.innerHTML = `
+            <td class="font-bold">${idVal}</td>
+            <td class="max-w-[200px] truncate"><a href="${linkVal}" target="_blank" class="text-primary hover:underline">${linkVal}</a></td>
+            <td class="max-w-[250px] truncate">${legendaVal}</td>
+            <td class="max-w-[150px] truncate">${imagemVal}</td>
+            <td>
+                <div class="flex gap-2">
+                    <button class="btn btn-edit btn-sm flex items-center" onclick="prepareEditInstagram(${rowNum})">
+                        <span class="material-symbols-outlined text-[14px]">edit</span>
+                    </button>
+                    <button class="btn btn-danger btn-sm flex items-center" onclick="deleteInstagram(${rowNum})">
+                        <span class="material-symbols-outlined text-[14px]">delete</span>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function openCreateInstagram() {
+    document.getElementById('instagram-row-id').value = '';
+    document.getElementById('instagram-mode').value = 'create';
+    
+    // Gera ID sequencial
+    const posts = appData.instagram || [];
+    document.getElementById('instagram-id').value = 'POST_' + (posts.length + 1);
+    
+    document.getElementById('instagram-link').value = '';
+    document.getElementById('instagram-legenda').value = '';
+    
+    const fileInput = document.getElementById('instagram-imagem');
+    if (fileInput) fileInput.value = '';
+
+    document.getElementById('modal-instagram-title').textContent = 'Nova Postagem do Instagram';
+    openModal('modal-instagram');
+}
+
+function prepareEditInstagram(rowNum) {
+    const posts = appData.instagram || [];
+    const post = posts.find(p => p._row === rowNum);
+    if (!post) {
+        alert('Erro ao localizar postagem selecionada.');
+        return;
+    }
+    
+    const idVal = post.ID || post.id || '';
+    const linkVal = post['Link do Post'] || post.link || '';
+    const legendaVal = post['Legenda'] || post.legenda || '';
+    const imagemVal = post['URL da Imagem'] || post.imagem || '';
+    
+    openEditInstagram(idVal, linkVal, legendaVal, imagemVal, rowNum);
+}
+
+function openEditInstagram(id, link, legenda, imagem, row) {
+    document.getElementById('instagram-row-id').value = row;
+    document.getElementById('instagram-mode').value = 'edit';
+    document.getElementById('instagram-id').value = id;
+    document.getElementById('instagram-link').value = link;
+    document.getElementById('instagram-legenda').value = legenda;
+    
+    const fileInput = document.getElementById('instagram-imagem');
+    if (fileInput) fileInput.value = '';
+
+    document.getElementById('modal-instagram-title').textContent = 'Editar Postagem do Instagram';
+    openModal('modal-instagram');
+}
+
+async function deleteInstagram(rowNum) {
+    if (isPastor()) {
+        openModal('modal-acesso-negado');
+        return;
+    }
+    if (!confirm('Deseja realmente remover esta postagem do carrossel?')) return;
+    showLoader(true);
+    try {
+        await fetchPOST({
+            action: 'deleteRow',
+            sheetName: 'Instagram',
+            row: rowNum
+        });
+        setTimeout(loadAllData, 1000);
+    } catch (e) {
+        console.error(e);
+        alert('Erro ao excluir postagem.');
+    }
+    showLoader(false);
+}
