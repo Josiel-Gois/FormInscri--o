@@ -157,6 +157,7 @@
 <a class="text-on-surface-variant font-body-md hover:text-secondary transition-colors duration-300" href="#atividades">Atividades</a>
 <a class="text-on-surface-variant font-body-md hover:text-secondary transition-colors duration-300 cursor-pointer" onclick="openApoiadoresModal()">Apoiadores</a>
 <a class="text-on-surface-variant font-body-md hover:text-secondary transition-colors duration-300" href="#contato">Contato</a>
+<a class="text-on-surface-variant font-body-md hover:text-secondary transition-colors duration-300 cursor-pointer" onclick="openFinanceiroModal()">Financeiro</a>
 <a class="bg-secondary text-on-secondary px-6 py-2 rounded-full font-label-sm uppercase tracking-wider bouncy-button" href="inscricao.html">Inscrição</a>
 </nav>
 <button id="menu-btn" class="xl:hidden text-primary p-2">
@@ -491,6 +492,7 @@ Abrir no Google Maps
 <a class="text-on-primary/80 hover:text-tertiary-fixed underline transition-all font-body-md" href="#atividades">Atividades</a>
 <a class="text-on-primary/80 hover:text-tertiary-fixed underline transition-all font-body-md cursor-pointer" onclick="openApoiadoresModal()">Apoiadores</a>
 <a class="text-on-primary/80 hover:text-tertiary-fixed underline transition-all font-body-md" href="inscricao.html">Inscrição</a>
+<a class="text-on-primary/80 hover:text-tertiary-fixed underline transition-all font-body-md cursor-pointer" onclick="openFinanceiroModal()">Financeiro</a>
 <a class="text-on-primary/80 hover:text-tertiary-fixed underline transition-all font-body-md" href="admin.html">Área do Diretor</a>
 </div>
 </div>
@@ -607,6 +609,81 @@ Abrir no Google Maps
     </div>
 </div>
 
+<!-- Modal Financeiro -->
+<div id="modal-public-financeiro" class="fixed inset-0 bg-black/60 z-[10000] hidden items-center justify-center backdrop-blur-sm">
+    <div class="bg-white rounded-xl p-8 max-w-lg w-full mx-4 shadow-2xl relative max-h-[85vh] flex flex-col">
+        <button onclick="closeModal('modal-public-financeiro')" class="absolute top-4 right-4 text-gray-500 hover:text-error">
+            <span class="material-symbols-outlined text-[32px]">close</span>
+        </button>
+        <h2 class="font-headline-lg text-primary text-center mb-2">Financeiro do Clube 🪙</h2>
+        <p class="text-center text-on-surface-variant mb-6 text-sm">Informações sobre taxas, mensalidades e pagamentos.</p>
+        
+        <div class="overflow-y-auto flex-1 space-y-6 pr-2">
+            <!-- Taxas Box -->
+            <div class="bg-surface-container-low p-5 rounded-xl border border-primary-fixed flex flex-col gap-4">
+                <div class="flex items-center gap-3 border-b border-primary-fixed/30 pb-3">
+                    <span class="material-symbols-outlined text-primary text-[32px]">local_activity</span>
+                    <div>
+                        <h3 class="font-bold text-primary text-base">Inscrição</h3>
+                        <p class="text-xl font-headline-md text-secondary font-black">R$ 15,00 <span class="text-xs font-normal text-on-surface-variant">(pagamento único)</span></p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary text-[32px]">calendar_month</span>
+                    <div>
+                        <h3 class="font-bold text-primary text-base">Mensalidade</h3>
+                        <p class="text-xl font-headline-md text-secondary font-black">R$ 10,00 <span class="text-xs font-normal text-on-surface-variant">(a partir do mês seguinte à inscrição)</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- How to Pay -->
+            <div class="bg-surface-container p-5 rounded-xl border border-outline-variant">
+                <h3 class="font-bold text-primary mb-3 flex items-center gap-2">
+                    <span class="material-symbols-outlined">payments</span> Como pagar?
+                </h3>
+                <p class="text-sm text-on-surface-variant mb-4">
+                    Preferencialmente, o valor de inscrição e as mensalidades podem ser enviados via <strong>7me</strong> clicando no link abaixo ou utilizando o passo a passo:
+                </p>
+
+                <!-- CTA Button -->
+                <a href="https://7me.app/71/dugyhp" target="_blank" rel="noopener noreferrer" class="bg-secondary text-on-secondary px-6 py-4 rounded-full font-bold bouncy-button shadow-lg shadow-secondary/20 flex items-center justify-center gap-2 mb-4 decoration-transparent">
+                    Pagar via 7me <span class="material-symbols-outlined">open_in_new</span>
+                </a>
+
+                <button type="button" class="bg-primary-fixed text-on-primary-fixed px-4 py-2 rounded-lg font-bold w-full mb-4" onclick="document.getElementById('financeiro-tutorial-7me').classList.toggle('hidden')">
+                    Ver passo a passo do 7me 📱
+                </button>
+
+                <!-- Step-by-step images (reusing 1.jpeg - 5.jpeg) -->
+                <div id="financeiro-tutorial-7me" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-white p-2 rounded-lg shadow-sm text-center">
+                        <img src="1.jpeg" alt="Passo 1 7me" class="w-full h-auto rounded mb-2 border border-outline-variant/30">
+                        <span class="text-xs font-bold">1. Selecione a igreja</span>
+                    </div>
+                    <div class="bg-white p-2 rounded-lg shadow-sm text-center">
+                        <img src="2.jpeg" alt="Passo 2 7me" class="w-full h-auto rounded mb-2 border border-outline-variant/30">
+                        <span class="text-xs font-bold">2. Escolha ofertar para minha igreja</span>
+                    </div>
+                    <div class="bg-white p-2 rounded-lg shadow-sm text-center">
+                        <img src="3.jpeg" alt="Passo 3 7me" class="w-full h-auto rounded mb-2 border border-outline-variant/30">
+                        <span class="text-xs font-bold">3. Selecione Aventureiros</span>
+                    </div>
+                    <div class="bg-white p-2 rounded-lg shadow-sm text-center">
+                        <img src="4.jpeg" alt="Passo 4 7me" class="w-full h-auto rounded mb-2 border border-outline-variant/30">
+                        <span class="text-xs font-bold">4. Digite o valor</span>
+                    </div>
+                    <div class="bg-white p-2 rounded-lg shadow-sm text-center sm:col-span-2">
+                        <img src="5.jpeg" alt="Passo 5 7me" class="w-full h-auto rounded mb-2 border border-outline-variant/30 max-w-xs mx-auto">
+                        <span class="text-xs font-bold">5. Confirme o pagamento</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="config.js"></script>
 <script>
     // A URL de API pública deve ser definida em config.js
@@ -626,6 +703,9 @@ Abrir no Google Maps
     function closeModal(id) {
         document.getElementById(id).classList.add('hidden');
         document.getElementById(id).classList.remove('flex');
+    }
+    function openFinanceiroModal() {
+        openModal('modal-public-financeiro');
     }
 
     // Custom spinner with logo and spinning border around it
