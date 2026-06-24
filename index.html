@@ -893,6 +893,14 @@ Abrir no Google Maps
                 });
             });
         }
+
+        // Abrir cronograma automaticamente se houver parâmetro ou hash na URL
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('popup') === 'cronograma' || urlParams.get('modal') === 'cronograma' || window.location.hash === '#cronograma') {
+            setTimeout(() => {
+                openCronogramaModal();
+            }, 300);
+        }
     });
 
     function openStatusModal() {
